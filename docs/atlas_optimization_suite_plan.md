@@ -106,6 +106,14 @@ Current implementation status:
 
 - Batch 1 / Prompt 2 completed the Atlas app shell under `apps/web/src/atlas/ui` and made it the default app entry, while keeping the Data Science Deck available through `?app=deck` or `#deck`.
 - Batch 1 / Prompt 3 added the first Atlas card model, reducer, local storage persistence, create/select/drag/delete behavior, and a large pan/zoom workbench using the existing `react-zoom-pan-pinch` dependency.
+- Batch 2 / Prompt 1 added editable typed tags with generic quick-add presets, card tag chips, inspector add/edit/delete controls, empty-key validation, and local persistence through the existing Atlas workbench storage.
+- Batch 2 / Prompt 2 added editable card properties with `constant`, `formula`, `decision_ref`, and `data_ref` kinds, compact card summaries, inspector add/edit/delete controls, empty-name validation, and persistence normalization for optional units and notes.
+- Batch 2 / Prompt 3 added code-defined card templates, a toolbar template picker with descriptions, template-based card creation, and independent copying of starter tags/properties including the non-engine Product-like Object example.
+- Batch 2 / Prompt 4 added visual groups as separate workbench objects with title, position, size, optional color, notes, inspector editing, deletion without deleting cards, rendering behind cards, and local persistence.
+- Batch 3 / Prompt 1 added persisted named card queries with include/exclude typed-tag conditions, AND include semantics, exclusion filtering, a side-panel query builder, match counts/lists, and live workbench highlighting independent from visual groups.
+- Batch 3 / Prompt 2 added a serializable expression reference model, property-name collection from selected query matches, missing-property diagnostics, a property selector panel, expression preview rendering, and JSON preview for simple property/literal/multiply references without evaluation.
+- Batch 3 / Prompt 3 added Function-card `TaggedSum` configuration with query selection, simple property/property and property/literal expressions, card-face previews, selected-function match highlighting, missing-property diagnostics, and local persistence without numerical evaluation.
+- Batch 3 / Prompt 4 added transient Function-card dependency visualization: selected TaggedSum cards highlight matched query cards, mark expression properties on those cards, and show query/match/property/missing-property summaries with a highlight toggle. Dependency lines remain future work because the current pan/zoom workbench does not provide stable edge primitives yet.
 - The disposition flags above remain valid: the existing Data Science Deck tabletop remains `ADAPT`, while deck-specific piles, draw modes, asset pipelines, and guide/demo content remain `QUARANTINE` until Atlas no longer depends on them.
 
 ## Frontend/Backend Split

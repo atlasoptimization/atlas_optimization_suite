@@ -1,4 +1,5 @@
 import { ATLAS_CARD_TYPES, type AtlasCardType } from "../core/types";
+import type { AtlasCardTemplate } from "../core/templates";
 
 export type AtlasToolbarAction =
   | "evaluate"
@@ -13,6 +14,9 @@ export type AtlasToolbarAction =
 type AtlasToolbarProps = {
   onAction: (action: AtlasToolbarAction) => void;
   onCreateCard: (cardType: AtlasCardType) => void;
+  onCreateFromTemplate: (templateId: string) => void;
+  onCreateGroup: () => void;
+  templates: AtlasCardTemplate[];
   canUndo: boolean;
   canRedo: boolean;
 };
@@ -39,7 +43,15 @@ const cardTypeLabels: Record<AtlasCardType, string> = {
   objective: "Objective"
 };
 
-export function AtlasToolbar({ onAction, onCreateCard, canUndo, canRedo }: AtlasToolbarProps) {
+export function AtlasToolbar({
+  onAction,
+  onCreateCard,
+  onCreateFromTemplate,
+  onCreateGroup,
+  templates,
+  canUndo,
+  canRedo
+}: AtlasToolbarProps) {
   return (
     <header className="atlas-toolbar">
       <div className="atlas-brand-block">
@@ -72,11 +84,36 @@ export function AtlasToolbar({ onAction, onCreateCard, canUndo, canRedo }: Atlas
       </nav>
 
       <nav aria-label="Create Atlas card" className="atlas-toolbar-actions atlas-create-actions">
+        <label className="atlas-template-picker">
+          <span>Template</span>
+          <select
+            defaultValue=""
+            onChange={(event) => {
+              const templateId = event.target.value;
+              if (!templateId) return;
+              onCreateFromTemplate(templateId);
+              event.currentTarget.value = "";
+            }}
+            aria-label="Create card from template"
+          >
+            <option value="" disabled>
+              Create from template...
+            </option>
+            {templates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name} - {template.description}
+              </option>
+            ))}
+          </select>
+        </label>
         {ATLAS_CARD_TYPES.map((cardType) => (
           <button key={cardType} type="button" onClick={() => onCreateCard(cardType)}>
             + {cardTypeLabels[cardType]}
           </button>
         ))}
+        <button type="button" onClick={onCreateGroup}>
+          + Group
+        </button>
       </nav>
 
       <a className="atlas-deck-link" href="?app=deck">

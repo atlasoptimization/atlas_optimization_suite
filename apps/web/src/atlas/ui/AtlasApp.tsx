@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { getSelectedAtlasCard } from "../core/cards";
+import { getFunctionDependencySummary, getTaggedSumMatchingCards } from "../core/functions";
+import { getSelectedAtlasGroup } from "../core/groups";
+import { evaluateAtlasQuery, getSelectedAtlasQuery } from "../core/queries";
 import { atlasReducer } from "../core/reducer";
 import type { AtlasAction, AtlasCardType, AtlasWorkbenchState } from "../core/types";
+import { ATLAS_CARD_TEMPLATES, getAtlasCardTemplate } from "../core/templates";
 import {
   loadAtlasWorkbenchState,
   saveAtlasWorkbenchState
@@ -12,6 +16,8 @@ import { AtlasInspector } from "./inspector/AtlasInspector";
 import { AtlasModelDock } from "./dock/AtlasModelDock";
 import { AtlasSolutionPanel } from "./solution/AtlasSolutionPanel";
 import { AtlasSearchPalette } from "./search/AtlasSearchPalette";
+import { AtlasQueryBuilder } from "./query/AtlasQueryBuilder";
+import { AtlasPropertySelector } from "./query/AtlasPropertySelector";
 import "./atlas.css";
 
 const PLACEHOLDER_ACTION_LABELS: Record<AtlasToolbarAction, string> = {
@@ -76,8 +82,56 @@ export function AtlasApp() {
   );
   const [lastAction, setLastAction] = useState("Atlas Optimization Suite prototype loaded.");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [dependencyHighlightEnabled, setDependencyHighlightEnabled] = useState(true);
   const workbench = history.present;
   const selectedCard = getSelectedAtlasCard(workbench);
+  const selectedGroup = getSelectedAtlasGroup(workbench);
+  const selectedQuery = getSelectedAtlasQuery(workbench);
+  const highlightedCardIds = useMemo(
+    () => {
+      if (selectedQuery) {
+        return new Set(evaluateAtlasQuery(selectedQuery, workbench.cards).map((card) => card.id));
+      }
+
+      if (
+        dependencyHighlightEnabled &&
+        selectedCard?.type === "function" &&
+        selectedCard.functionKind === "tagged_sum"
+      ) {
+        return new Set(
+          getTaggedSumMatchingCards(selectedCard, workbench.queries, workbench.cards).map(
+            (card) => card.id
+          )
+        );
+      }
+
+      return new Set<string>();
+    },
+    [dependencyHighlightEnabled, selectedQuery, selectedCard, workbench.cards, workbench.queries]
+  );
+  const dependencyPropertyNamesByCardId = useMemo(() => {
+    if (
+      !dependencyHighlightEnabled ||
+      selectedQuery ||
+      selectedCard?.type !== "function" ||
+      selectedCard.functionKind !== "tagged_sum"
+    ) {
+      return {};
+    }
+
+    const dependencySummary = getFunctionDependencySummary(
+      selectedCard,
+      workbench.queries,
+      workbench.cards
+    );
+
+    return Object.fromEntries(
+      dependencySummary.matchedCards.map((card) => [
+        card.id,
+        new Set(dependencySummary.usedProperties)
+      ])
+    );
+  }, [dependencyHighlightEnabled, selectedQuery, selectedCard, workbench.cards, workbench.queries]);
   const updatedAt = useMemo(
     () => new Intl.DateTimeFormat(undefined, {
       hour: "2-digit",
@@ -93,6 +147,17 @@ export function AtlasApp() {
   function createCard(cardType: AtlasCardType) {
     dispatch({ type: "card.create", cardType });
     setLastAction(`Created ${cardType} card.`);
+  }
+
+  function createCardFromTemplate(templateId: string) {
+    const template = getAtlasCardTemplate(templateId);
+    dispatch({ type: "card.createFromTemplate", templateId });
+    setLastAction(template ? `Created ${template.name} card.` : "Template not found.");
+  }
+
+  function createGroup() {
+    dispatch({ type: "group.create" });
+    setLastAction("Created visual group.");
   }
 
   function handleToolbarAction(action: AtlasToolbarAction) {
@@ -114,6 +179,9 @@ export function AtlasApp() {
       <AtlasToolbar
         onAction={handleToolbarAction}
         onCreateCard={createCard}
+        onCreateFromTemplate={createCardFromTemplate}
+        onCreateGroup={createGroup}
+        templates={ATLAS_CARD_TEMPLATES}
         canUndo={history.past.length > 0}
         canRedo={history.future.length > 0}
       />
@@ -122,8 +190,14 @@ export function AtlasApp() {
         <section className="atlas-workbench-column">
           <AtlasWorkbench
             cards={workbench.cards}
+            groups={workbench.groups}
+            queries={workbench.queries}
+            highlightedCardIds={highlightedCardIds}
+            dependencyPropertyNamesByCardId={dependencyPropertyNamesByCardId}
             selectedCardId={workbench.selectedCardId}
+            selectedGroupId={workbench.selectedGroupId}
             onSelectCard={(cardId) => dispatch({ type: "card.select", cardId })}
+            onSelectGroup={(groupId) => dispatch({ type: "group.select", groupId })}
             onMoveCard={(cardId, position) => dispatch({ type: "card.move", cardId, position })}
           />
           <AtlasModelDock cards={workbench.cards} />
@@ -132,6 +206,50 @@ export function AtlasApp() {
         <aside className="atlas-side-panel" aria-label="Inspector and solution panel">
           <AtlasInspector
             card={selectedCard}
+            group={selectedGroup}
+            cards={workbench.cards}
+            queries={workbench.queries}
+            dependencyHighlightEnabled={dependencyHighlightEnabled}
+            onAddTag={(cardId, key, value) => {
+              dispatch({ type: "tag.add", cardId, key, value });
+              setLastAction(`Added tag ${key.trim()}.`);
+            }}
+            onUpdateTag={(cardId, tagId, key, value) => {
+              dispatch({ type: "tag.update", cardId, tagId, key, value });
+              setLastAction(`Updated tag ${key.trim()}.`);
+            }}
+            onDeleteTag={(cardId, tagId) => {
+              dispatch({ type: "tag.delete", cardId, tagId });
+              setLastAction("Deleted tag.");
+            }}
+            onAddProperty={(cardId, property) => {
+              dispatch({ type: "property.add", cardId, ...property });
+              setLastAction(`Added property ${property.name.trim()}.`);
+            }}
+            onUpdateProperty={(cardId, propertyId, property) => {
+              dispatch({ type: "property.update", cardId, propertyId, ...property });
+              setLastAction(`Updated property ${property.name.trim()}.`);
+            }}
+            onDeleteProperty={(cardId, propertyId) => {
+              dispatch({ type: "property.delete", cardId, propertyId });
+              setLastAction("Deleted property.");
+            }}
+            onUpdateTaggedSum={(cardId, patch) => {
+              dispatch({ type: "function.taggedSum.update", cardId, patch });
+              setLastAction("Updated TaggedSum function.");
+            }}
+            onToggleDependencyHighlight={() => {
+              setDependencyHighlightEnabled((enabled) => !enabled);
+              setLastAction("Toggled dependency highlighting.");
+            }}
+            onUpdateGroup={(groupId, patch) => {
+              dispatch({ type: "group.update", groupId, patch });
+              setLastAction("Updated group.");
+            }}
+            onDeleteGroup={(groupId) => {
+              dispatch({ type: "group.delete", groupId });
+              setLastAction("Deleted group.");
+            }}
             onDeleteCard={(cardId) => {
               dispatch({ type: "card.delete", cardId });
               setLastAction("Deleted selected card.");
@@ -140,6 +258,48 @@ export function AtlasApp() {
               dispatch({ type: "workbench.clear" });
               setLastAction(PLACEHOLDER_ACTION_LABELS.clear);
             }}
+          />
+          <AtlasQueryBuilder
+            cards={workbench.cards}
+            queries={workbench.queries}
+            selectedQueryId={workbench.selectedQueryId}
+            onCreateQuery={() => {
+              dispatch({ type: "query.create" });
+              setLastAction("Created query.");
+            }}
+            onSelectQuery={(queryId) => {
+              dispatch({ type: "query.select", queryId });
+              setLastAction(queryId ? "Selected query." : "Cleared query selection.");
+            }}
+            onUpdateQuery={(queryId, name) => {
+              dispatch({ type: "query.update", queryId, patch: { name } });
+              setLastAction("Updated query.");
+            }}
+            onDuplicateQuery={(queryId) => {
+              dispatch({ type: "query.duplicate", queryId });
+              setLastAction("Duplicated query.");
+            }}
+            onDeleteQuery={(queryId) => {
+              dispatch({ type: "query.delete", queryId });
+              setLastAction("Deleted query.");
+            }}
+            onAddCondition={(queryId, list, key, value) => {
+              dispatch({ type: "query.condition.add", queryId, list, key, value });
+              setLastAction("Added query condition.");
+            }}
+            onUpdateCondition={(queryId, list, conditionId, key, value) => {
+              dispatch({ type: "query.condition.update", queryId, list, conditionId, key, value });
+              setLastAction("Updated query condition.");
+            }}
+            onDeleteCondition={(queryId, list, conditionId) => {
+              dispatch({ type: "query.condition.delete", queryId, list, conditionId });
+              setLastAction("Deleted query condition.");
+            }}
+          />
+          <AtlasPropertySelector
+            cards={workbench.cards}
+            queries={workbench.queries}
+            selectedQueryId={workbench.selectedQueryId}
           />
           <AtlasSolutionPanel statusMessage={lastAction} updatedAt={updatedAt} />
         </aside>

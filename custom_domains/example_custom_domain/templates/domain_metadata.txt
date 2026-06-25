@@ -1,0 +1,4 @@
+domain_name="example domain"
+domain_folder_name="example_custom_domain"
+data_csv_name="card_data_example_domain.csv"
+template_sla_name="template_example_domain.sla"

@@ -118,6 +118,7 @@ import { Tableau } from "./ui/tableau/Tableau";
 import { TimerWindow } from "./ui/timer/TimerWindow";
 import { DrawChoiceModal } from "./ui/draw/DrawChoiceModal";
 import { useRecentActionEffects } from "./ui/effects/useRecentActionEffects";
+import { AtlasApp } from "./atlas/ui/AtlasApp";
 import "./style.css";
 
 const EMPTY_MANIFEST: DeckManifest = {
@@ -192,7 +193,7 @@ function DisabledBuildFeatureMessage() {
   );
 }
 
-function App() {
+function DataScienceDeckApp() {
   const hasSavedSessionAtStartup = useRef(
     featureConfig.enableLocalSaveLoad && hasSavedLocalSession()
   );
@@ -1839,6 +1840,24 @@ function App() {
       )}
     </div>
   );
+}
+
+export function getInitialAppView(location: Pick<Location, "hash" | "search">) {
+  const params = new URLSearchParams(location.search);
+  const requestedApp = params.get("app")?.toLowerCase();
+  const hash = location.hash.toLowerCase();
+
+  if (requestedApp === "deck" || hash === "#deck") return "deck";
+  return "atlas";
+}
+
+function App() {
+  const appView = getInitialAppView(
+    typeof window === "undefined" ? { hash: "", search: "" } : window.location
+  );
+
+  if (appView === "deck") return <DataScienceDeckApp />;
+  return <AtlasApp />;
 }
 
 function scaleForCardSize(size: TableauCardSize): number {

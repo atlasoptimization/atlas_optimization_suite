@@ -161,6 +161,8 @@ pnpm sync:assets
 
 ## Quickstart For Developers
 
+The default local app entry now opens the Atlas Optimization Suite prototype. The original Data Science Deck remains available at `?app=deck` or `#deck`.
+
 Run tests:
 
 ```bash

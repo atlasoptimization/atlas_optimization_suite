@@ -1,0 +1,27 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+
+# Generated deck cache
+apps/web/public/deck/*
+!apps/web/public/deck/.gitkeep
+
+# Private local assets, in case accidentally copied
+deck_assets/
+_private_deck_assets/
+*.pdf
+*.webp
+*.png
+*.jpg
+*.jpeg
+
+# Local sessions / exports
+*.session.json
+sessions/
+exports/
+
+# Logs
+*.log
+.DS_Store

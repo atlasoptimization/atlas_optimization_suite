@@ -1,0 +1,4 @@
+# Open terminal in data_science_deck_app folder
+pnpm install
+pnpm sync:assets
+pnpm dev

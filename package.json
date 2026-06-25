@@ -1,0 +1,43 @@
+{
+  "name": "data-science-deck-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @dsd/web dev",
+    "build": "pnpm --filter @dsd/web build",
+    "preview": "pnpm --filter @dsd/web preview",
+    "test": "vitest run",
+    "sync:assets": "tsx scripts/sync-assets.ts",
+    "build:github-pages": "pnpm --filter @dsd/web build -- --base=/data_science_deck/",
+    "prepare:github-pages": "pnpm sync:assets:public && pnpm audit:manifest-assets && pnpm build:github-pages && pnpm audit:public-build-assets && pnpm smoke:asset-urls && pnpm audit:release-paths && pnpm audit:asset-sizes",
+    "sync:assets:local": "tsx scripts/sync-assets.ts --profile local-full",
+    "sync:assets:public": "tsx scripts/sync-assets.ts --profile public-demo",
+    "sync:assets:release": "tsx scripts/sync-assets.ts --profile local-release",
+    "check:assets": "tsx scripts/check-assets.ts",
+    "audit:release-paths": "node scripts/audit-release-paths.mjs",
+    "audit:manifest-assets": "node scripts/audit-manifest-assets.mjs",
+    "audit:public-build-assets": "node scripts/audit-public-build-assets.mjs",
+    "smoke:asset-urls": "node scripts/smoke-asset-urls.mjs",
+    "check:public-assets-tracked": "node scripts/check-public-assets-tracked.mjs",
+    "audit:asset-sizes": "node scripts/audit-asset-sizes.mjs",
+    "audit:asset-inventory": "node scripts/audit-asset-inventory.mjs",
+    "audit:asset-cleanup-plan": "node scripts/audit-asset-cleanup-plan.mjs",
+    "build:public:github": "tsx scripts/build-profile.ts public-demo github",
+    "build:public:atlas": "tsx scripts/build-profile.ts public-demo atlas",
+    "build:local-release": "tsx scripts/build-profile.ts local-release local-release",
+    "start": "pnpm sync:assets && pnpm dev"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/papaparse": "^5.3.15",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.6"
+  },
+  "dependencies": {
+    "@dsd/deck-assets": "workspace:*",
+    "dotenv": "^16.4.7",
+    "papaparse": "^5.4.1"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "domainId": "custom_domain",
+  "domainName": "Custom Domain",
+  "shortName": "Cd",
+  "description": "A starter custom domain for local modelling experiments.",
+  "color": "#888888",
+  "symbolPath": "images/custom-domain-symbol.png",
+  "cardsCsv": "cards.example.csv",
+  "imagesFolder": "images",
+  "domainMasterCardName": "The Custom Domain",
+  "subdomains": [
+    {
+      "name": "Custom Subdomain",
+      "description": "A starter subdomain."
+    }
+  ],
+  "cards": [
+    {
+      "cardname": "The Custom Domain",
+      "scientific_twin": "Custom domain master",
+      "domain": "Custom Domain",
+      "subdomain": "",
+      "keywords": "custom; domain; master",
+      "summary": "Represents the whole custom domain.",
+      "question": "What does this domain make visible?",
+      "story": "A local extension to the modelling deck.",
+      "effect_good": "Use this as the domain frame.",
+      "effect_bad": "The custom frame may be too vague.",
+      "effect_mod": "Apply this domain as a lens."
+    },
+    {
+      "cardname": "Custom Subdomain",
+      "scientific_twin": "Custom subdomain master",
+      "domain": "Custom Domain",
+      "subdomain": "Custom Subdomain",
+      "keywords": "custom; subdomain",
+      "summary": "Represents a starter subdomain.",
+      "question": "What local subset matters here?",
+      "story": "A named region inside the custom domain.",
+      "effect_good": "Use this to group related custom cards.",
+      "effect_bad": "This subdomain may hide important variation.",
+      "effect_mod": "Treat another card through this subdomain."
+    },
+    {
+      "cardname": "Custom Card",
+      "scientific_twin": "Custom ordinary card",
+      "domain": "Custom Domain",
+      "subdomain": "Custom Subdomain",
+      "keywords": "custom; ordinary",
+      "summary": "A starter ordinary card.",
+      "question": "What local idea should be tested?",
+      "story": "Replace this with a useful local modelling concept.",
+      "effect_good": "Adds a concrete custom idea.",
+      "effect_bad": "May be an untested local assumption.",
+      "effect_mod": "Use as a modifier for another card."
+    }
+  ]
+}

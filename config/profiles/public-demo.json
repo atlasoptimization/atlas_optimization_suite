@@ -1,0 +1,29 @@
+{
+  "id": "public-demo",
+  "description": "Public static demo profile. Runtime output must be self-contained and browser-safe.",
+  "basePath": "/data-science-deck-app/",
+  "githubUrl": "https://github.com/your-org/data-science-deck-app",
+  "releaseUrl": "https://github.com/your-org/data-science-deck-app/releases",
+  "features": {
+    "enableLocalSaveLoad": false,
+    "enableSessionJsonImportExport": true,
+    "enableCustomAssets": false,
+    "enableCustomCards": false,
+    "enableCustomDomains": false,
+    "enableDeveloperPanel": false,
+    "enableAskAiContextExport": true,
+    "enableTimers": true,
+    "enableDeskPngExport": true
+  },
+  "assets": {
+    "includedDomains": ["Source", "Structure", "Chameleon", "Void", "Volition", "Aspect"],
+    "includeCustomDomains": false,
+    "includePdfs": true,
+    "includePreviews": true,
+    "includeHandbook": true,
+    "includeBackgrounds": true,
+    "includeIcons": true,
+    "allowPrivateSyncRoots": true,
+    "note": "Public filtering is intentionally explicit here. Until a smaller public sample deck is curated, this includes the current approved runtime deck bundle while excluding custom domains."
+  }
+}

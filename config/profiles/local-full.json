@@ -1,0 +1,28 @@
+{
+  "id": "local-full",
+  "description": "Full local development profile. Uses private/external asset roots at sync-time only.",
+  "basePath": "/",
+  "githubUrl": "https://github.com/your-org/data-science-deck-app",
+  "releaseUrl": "https://github.com/your-org/data-science-deck-app/releases",
+  "features": {
+    "enableLocalSaveLoad": true,
+    "enableSessionJsonImportExport": true,
+    "enableCustomAssets": true,
+    "enableCustomCards": true,
+    "enableCustomDomains": true,
+    "enableDeveloperPanel": true,
+    "enableAskAiContextExport": true,
+    "enableTimers": true,
+    "enableDeskPngExport": true
+  },
+  "assets": {
+    "includedDomains": ["Source", "Structure", "Chameleon", "Void", "Volition", "Aspect"],
+    "includeCustomDomains": true,
+    "includePdfs": true,
+    "includePreviews": true,
+    "includeHandbook": true,
+    "includeBackgrounds": true,
+    "includeIcons": true,
+    "allowPrivateSyncRoots": true
+  }
+}

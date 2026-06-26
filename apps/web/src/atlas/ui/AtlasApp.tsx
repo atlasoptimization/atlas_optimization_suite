@@ -34,7 +34,12 @@ import {
   solutionRuntimeValues,
   type AtlasSolutionState
 } from "../core/solution";
-import type { AtlasAction, AtlasCardType, AtlasWorkbenchState } from "../core/types";
+import {
+  markSolveDiagnosticsStale,
+  upsertRuntimeDiagnostics,
+  type AtlasRuntimeDiagnostic
+} from "../core/runtimeDiagnostics";
+import type { AtlasAction, AtlasCardModuleKind, AtlasCardType, AtlasWorkbenchState } from "../core/types";
 import { ATLAS_CARD_TEMPLATES, getAtlasCardTemplate } from "../core/templates";
 import {
   loadAtlasWorkbenchState,
@@ -123,6 +128,8 @@ export function AtlasApp() {
   const [backendStatus, setBackendStatus] = useState<"unknown" | "connected" | "unavailable">("unknown");
   const [backendDiagnostics, setBackendDiagnostics] = useState<string[]>([]);
   const [solution, setSolution] = useState<AtlasSolutionState>({ status: "empty" });
+  const [runtimeDiagnostics, setRuntimeDiagnostics] = useState<AtlasRuntimeDiagnostic[]>([]);
+  const [selectedRuntimeDiagnostic, setSelectedRuntimeDiagnostic] = useState<AtlasRuntimeDiagnostic | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const projectInputRef = useRef<HTMLInputElement | null>(null);
   const workbench = history.present;
@@ -227,6 +234,14 @@ export function AtlasApp() {
     workbench.cards,
     workbench.queries
   ]);
+  const diagnosticsByCardId = useMemo(
+    () =>
+      runtimeDiagnostics.reduce<Record<string, AtlasRuntimeDiagnostic[]>>((current, diagnostic) => {
+        current[diagnostic.cardId] = [...(current[diagnostic.cardId] ?? []), diagnostic];
+        return current;
+      }, {}),
+    [runtimeDiagnostics]
+  );
   const updatedAt = useMemo(
     () => new Intl.DateTimeFormat(undefined, {
       hour: "2-digit",
@@ -259,6 +274,7 @@ export function AtlasApp() {
           ? { ...current, stale: true }
           : current
     );
+    setRuntimeDiagnostics(markSolveDiagnosticsStale);
   }, [workbench]);
 
   useEffect(() => {
@@ -306,11 +322,13 @@ export function AtlasApp() {
         const diagnostics = response.diagnostics?.map((diagnostic) => diagnostic.message) ?? [];
         const summary = summarizeBackendEvaluation(response);
         setBackendDiagnostics([...summary, ...diagnostics]);
-        setEvaluationReport(
-          evaluateAtlasWorkbench(workbench, {
-            mode: evaluationMode,
-            runtimeValues
-          })
+        const report = evaluateAtlasWorkbench(workbench, {
+          mode: evaluationMode,
+          runtimeValues
+        });
+        setEvaluationReport(report);
+        setRuntimeDiagnostics((current) =>
+          upsertRuntimeDiagnostics(current, diagnosticsFromEvaluationReport(report))
         );
         setLastAction(
           diagnostics.length === 0
@@ -323,6 +341,9 @@ export function AtlasApp() {
           runtimeValues
         });
         setEvaluationReport(report);
+        setRuntimeDiagnostics((current) =>
+          upsertRuntimeDiagnostics(current, diagnosticsFromEvaluationReport(report))
+        );
         setBackendStatus("unavailable");
         setBackendDiagnostics([
           error instanceof Error ? error.message : "Backend evaluation failed; used local evaluator."
@@ -350,6 +371,9 @@ export function AtlasApp() {
         const diagnostics = result.diagnostics.map((diagnostic) => diagnostic.message);
         setBackendDiagnostics(diagnostics);
         setSolution({ status: "success", result, stale: false });
+        setRuntimeDiagnostics((current) =>
+          upsertRuntimeDiagnostics(current, diagnosticsFromSolveResult(result, workbench))
+        );
         setLastAction(
           result.status
             ? `Solve status: ${result.status}.`
@@ -525,6 +549,7 @@ export function AtlasApp() {
             queries={workbench.queries}
             highlightedCardIds={highlightedCardIds}
             dependencyPropertyNamesByCardId={dependencyPropertyNamesByCardId}
+            diagnosticsByCardId={diagnosticsByCardId}
             selectedCardId={workbench.selectedCardId}
             selectedGroupId={workbench.selectedGroupId}
             onSelectCard={(cardId) => {
@@ -533,7 +558,20 @@ export function AtlasApp() {
             }}
             onSelectGroup={(groupId) => dispatch({ type: "group.select", groupId })}
             onMoveCard={(cardId, position) => dispatch({ type: "card.move", cardId, position })}
+            onAttachModule={(cardId, kind, position) => {
+              dispatch({ type: "module.attach", cardId, kind, position });
+              setLastAction(`Attached ${kind} module.`);
+            }}
+            onMoveModule={(cardId, moduleId, position) => {
+              dispatch({ type: "module.update", cardId, moduleId, patch: { position } });
+            }}
+            onSelectDiagnostic={(diagnostic) => {
+              setSelectedRuntimeDiagnostic(diagnostic);
+              dispatch({ type: "card.select", cardId: diagnostic.cardId });
+              setLastAction(`Selected diagnostic ${diagnostic.label}.`);
+            }}
           />
+          <AtlasModulePalette />
           <AtlasModelDock cards={workbench.cards} />
         </section>
 
@@ -546,6 +584,7 @@ export function AtlasApp() {
             evaluationEntry={selectedEvaluationEntry}
             evaluationMode={evaluationMode}
             solutionEvaluationWarning={solutionWarning}
+            selectedRuntimeDiagnostic={selectedRuntimeDiagnostic}
             symbolicPreview={selectedSymbolicPreview}
             dependencyHighlightEnabled={dependencyHighlightEnabled}
             onAddTag={(cardId, key, value) => {
@@ -575,6 +614,14 @@ export function AtlasApp() {
             onDeleteProperty={(cardId, propertyId) => {
               dispatch({ type: "property.delete", cardId, propertyId });
               setLastAction("Deleted property.");
+            }}
+            onUpdateModule={(cardId, moduleId, patch) => {
+              dispatch({ type: "module.update", cardId, moduleId, patch });
+              setLastAction("Updated module.");
+            }}
+            onDeleteModule={(cardId, moduleId) => {
+              dispatch({ type: "module.delete", cardId, moduleId });
+              setLastAction("Deleted module.");
             }}
             onUpdateTaggedSum={(cardId, patch) => {
               dispatch({ type: "function.taggedSum.update", cardId, patch });
@@ -765,6 +812,87 @@ function summarizeBackendEvaluation(response: Record<string, unknown>) {
     }
   }
   return lines;
+}
+
+const MODULE_KINDS: AtlasCardModuleKind[] = ["tag", "property", "trait", "diagnostic", "note"];
+
+function AtlasModulePalette() {
+  return (
+    <section className="atlas-module-palette" aria-label="Module palette">
+      <span>Modules</span>
+      {MODULE_KINDS.map((kind) => (
+        <button
+          key={kind}
+          type="button"
+          draggable
+          onDragStart={(event) => {
+            event.dataTransfer.setData("application/x-atlas-module-kind", kind);
+            event.dataTransfer.effectAllowed = "copy";
+          }}
+        >
+          + {kind}
+        </button>
+      ))}
+    </section>
+  );
+}
+
+function diagnosticsFromEvaluationReport(report: AtlasEvaluationReport): AtlasRuntimeDiagnostic[] {
+  const timestamp = new Date().toISOString();
+  return Object.values(report.entries)
+    .filter((entry) => entry.value || entry.diagnostics.length > 0)
+    .map((entry) => ({
+      cardId: entry.cardId,
+      diagnosticId: "evaluation",
+      label: "value",
+      value: entry.value ? formatEvaluationDiagnosticValue(entry) : "unavailable",
+      status: entry.diagnostics.some((diagnostic) => diagnostic.level === "error")
+        ? "error"
+        : entry.diagnostics.length > 0
+          ? "warning"
+          : "ok",
+      source: "evaluate",
+      timestamp
+    }));
+}
+
+function diagnosticsFromSolveResult(
+  result: ReturnType<typeof parseAtlasSolveResult>,
+  workbench: AtlasWorkbenchState
+): AtlasRuntimeDiagnostic[] {
+  const timestamp = new Date().toISOString();
+  const diagnostics: AtlasRuntimeDiagnostic[] = [];
+  for (const [variableId, value] of Object.entries(result.variableValues)) {
+    const target = resolveSolutionVariableTarget(variableId, workbench.cards);
+    if (!target.cardId) continue;
+    diagnostics.push({
+      cardId: target.cardId,
+      diagnosticId: `solve:${variableId}`,
+      label: target.propertyName ? `${target.propertyName} solution` : "solution",
+      value: value === null ? "n/a" : String(value),
+      status: "ok",
+      source: "solve",
+      timestamp
+    });
+  }
+  for (const [constraintId, constraint] of Object.entries(result.constraints ?? {})) {
+    diagnostics.push({
+      cardId: constraintId,
+      diagnosticId: `solve:${constraintId}`,
+      label: "residual",
+      value: constraint.residual === null ? "n/a" : String(constraint.residual),
+      status: constraint.satisfied === false ? "warning" : "ok",
+      source: "solve",
+      timestamp
+    });
+  }
+  return diagnostics;
+}
+
+function formatEvaluationDiagnosticValue(entry: NonNullable<AtlasEvaluationReport["entries"][string]>) {
+  if (!entry.value) return "unavailable";
+  if (entry.value.kind === "number") return String(entry.value.value);
+  return `${entry.value.left ?? "?"}/${entry.value.right ?? "?"}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

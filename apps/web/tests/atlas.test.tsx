@@ -47,6 +47,15 @@ import {
   indexedPropertyLabel
 } from "../src/atlas/core/indexSets";
 import {
+  attachAtlasModule,
+  deleteAtlasModule,
+  updateAtlasModule
+} from "../src/atlas/core/modules";
+import {
+  markSolveDiagnosticsStale,
+  upsertRuntimeDiagnostics
+} from "../src/atlas/core/runtimeDiagnostics";
+import {
   buildTaggedSumExpression,
   createTaggedSumConfig,
   getFunctionDependencySummary,
@@ -239,6 +248,15 @@ describe("Atlas card model", () => {
           kind: "constant" as const,
           value: 12
         }
+      ],
+      modules: [
+        {
+          id: "module-price",
+          kind: "property" as const,
+          label: "price",
+          value: "15",
+          position: { x: 20, y: 22 }
+        }
       ]
     };
     const html = renderToString(
@@ -247,6 +265,16 @@ describe("Atlas card model", () => {
         allCards={[card]}
         queries={[]}
         dependencyPropertyNames={new Set()}
+        diagnostics={[
+          {
+            cardId: card.id,
+            diagnosticId: "eval",
+            label: "value",
+            value: "12",
+            status: "ok",
+            source: "evaluate"
+          }
+        ]}
         selected
         highlighted
         onPointerDown={() => undefined}
@@ -261,6 +289,8 @@ describe("Atlas card model", () => {
     expect(html).toContain("product");
     expect(html).toContain("unit_cost");
     expect(html).toContain("12");
+    expect(html).toContain("price");
+    expect(html).toContain("value");
     expect(html).toContain("data-card-id=\"card-function\"");
     expect(html).toContain("selected");
     expect(html).toContain("query-highlighted");
@@ -315,6 +345,78 @@ describe("Atlas card model", () => {
       }
     ]);
     expect(deleted.cards[0]?.properties).toEqual([]);
+  });
+
+  it("attaches, updates, moves, and deletes living card modules", () => {
+    const withCard = addAtlasCard(emptyAtlasState(), "object", "card-test");
+    const withModule = attachAtlasModule(withCard, "card-test", "property", {
+      id: "module-cost",
+      label: "cost",
+      value: "12",
+      position: { x: 20, y: 30 }
+    });
+    const updated = updateAtlasModule(withModule, "card-test", "module-cost", {
+      value: "14",
+      unit: "USD",
+      position: { x: 40, y: 50 }
+    });
+    const deleted = deleteAtlasModule(updated, "card-test", "module-cost");
+
+    expect(withModule.cards[0]?.modules?.[0]).toMatchObject({
+      kind: "property",
+      label: "cost",
+      value: "12"
+    });
+    expect(updated.cards[0]?.modules?.[0]).toMatchObject({
+      value: "14",
+      unit: "USD",
+      position: { x: 40, y: 50 }
+    });
+    expect(deleted.cards[0]?.modules).toEqual([]);
+  });
+
+  it("normalizes persisted modules with cards", () => {
+    const normalized = normalizeAtlasState({
+      cards: [
+        {
+          id: "card-test",
+          type: "object",
+          modules: [
+            {
+              id: "module-tag",
+              kind: "tag",
+              label: "type",
+              value: "product",
+              position: { x: 10, y: 14 }
+            }
+          ]
+        }
+      ]
+    });
+
+    expect(normalized.cards[0]?.modules?.[0]).toMatchObject({
+      id: "module-tag",
+      kind: "tag",
+      label: "type",
+      value: "product",
+      position: { x: 10, y: 14 }
+    });
+  });
+
+  it("updates and marks runtime diagnostics stale", () => {
+    const diagnostics = upsertRuntimeDiagnostics([], [
+      {
+        cardId: "card-test",
+        diagnosticId: "solve:quantity",
+        label: "solution",
+        value: "4",
+        status: "ok",
+        source: "solve"
+      }
+    ]);
+
+    expect(diagnostics).toHaveLength(1);
+    expect(markSolveDiagnosticsStale(diagnostics)[0]?.status).toBe("stale");
   });
 
   it("rejects empty property names", () => {
@@ -879,6 +981,7 @@ describe("Atlas card model", () => {
         allCards={[card]}
         queries={[]}
         dependencyPropertyNames={new Set(["unit_cost"])}
+        diagnostics={[]}
         selected={false}
         highlighted
         onPointerDown={() => undefined}

@@ -1,6 +1,7 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
-import type { AtlasCard, AtlasCardQuery, AtlasGroup, AtlasPosition } from "../../core/types";
+import type { AtlasCard, AtlasCardModuleKind, AtlasCardQuery, AtlasGroup, AtlasPosition } from "../../core/types";
+import type { AtlasRuntimeDiagnostic } from "../../core/runtimeDiagnostics";
 import { AtlasCardView } from "./AtlasCardView";
 import { AtlasGroupView } from "./AtlasGroupView";
 
@@ -13,11 +14,15 @@ type AtlasWorkbenchProps = {
   queries: AtlasCardQuery[];
   highlightedCardIds: Set<string>;
   dependencyPropertyNamesByCardId: Record<string, Set<string>>;
+  diagnosticsByCardId: Record<string, AtlasRuntimeDiagnostic[]>;
   selectedCardId: string | null;
   selectedGroupId: string | null;
   onSelectCard: (cardId: string | null) => void;
   onSelectGroup: (groupId: string | null) => void;
   onMoveCard: (cardId: string, position: AtlasPosition) => void;
+  onAttachModule: (cardId: string, kind: AtlasCardModuleKind, position: AtlasPosition) => void;
+  onMoveModule: (cardId: string, moduleId: string, position: AtlasPosition) => void;
+  onSelectDiagnostic: (diagnostic: AtlasRuntimeDiagnostic) => void;
 };
 
 type DragState = {
@@ -34,11 +39,15 @@ export function AtlasWorkbench({
   queries,
   highlightedCardIds,
   dependencyPropertyNamesByCardId,
+  diagnosticsByCardId,
   selectedCardId,
   selectedGroupId,
   onSelectCard,
   onSelectGroup,
-  onMoveCard
+  onMoveCard,
+  onAttachModule,
+  onMoveModule,
+  onSelectDiagnostic
 }: AtlasWorkbenchProps) {
   const dragRef = useRef<DragState | null>(null);
   const [draftPositions, setDraftPositions] = useState<Record<string, AtlasPosition>>({});
@@ -152,12 +161,16 @@ export function AtlasWorkbench({
                 allCards={cards}
                 queries={queries}
                 dependencyPropertyNames={dependencyPropertyNamesByCardId[card.id] ?? new Set()}
+                diagnostics={diagnosticsByCardId[card.id] ?? []}
                 selected={card.id === selectedCardId}
                 highlighted={highlightedCardIds.has(card.id)}
                 onPointerDown={(event) => startCardDrag(event, card)}
                 onPointerMove={moveCardDrag}
                 onPointerUp={finishCardDrag}
                 onPointerCancel={finishCardDrag}
+                onAttachModule={onAttachModule}
+                onMoveModule={onMoveModule}
+                onSelectDiagnostic={onSelectDiagnostic}
               />
             ))}
           </div>

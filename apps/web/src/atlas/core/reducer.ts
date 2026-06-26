@@ -14,6 +14,7 @@ import {
 } from "./cards";
 import { addAtlasGroup, deleteAtlasGroup, updateAtlasGroup } from "./groups";
 import { updateTaggedSumConfig } from "./functions";
+import { attachAtlasModule, deleteAtlasModule, updateAtlasModule } from "./modules";
 import { updateConstraintConfig } from "./constraints";
 import {
   addObjectiveTerm,
@@ -124,6 +125,16 @@ export function atlasReducer(
       );
     case "property.delete":
       return deleteAtlasProperty(state, action.cardId, action.propertyId);
+    case "module.attach":
+      return attachAtlasModule(state, action.cardId, action.kind, {
+        label: action.label,
+        value: action.value,
+        position: action.position
+      });
+    case "module.update":
+      return updateAtlasModule(state, action.cardId, action.moduleId, action.patch);
+    case "module.delete":
+      return deleteAtlasModule(state, action.cardId, action.moduleId);
     case "function.taggedSum.update":
       return updateTaggedSumConfig(state, action.cardId, action.patch);
     case "objective.update":

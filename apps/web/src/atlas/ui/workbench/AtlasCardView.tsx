@@ -3,19 +3,24 @@ import { constraintPreview } from "../../core/constraints";
 import { taggedSumPreview } from "../../core/functions";
 import { indexedPropertyLabel } from "../../core/indexSets";
 import { objectivePreview } from "../../core/objectives";
-import type { AtlasCard, AtlasCardQuery, AtlasCardType } from "../../core/types";
+import type { AtlasCard, AtlasCardModuleKind, AtlasCardQuery, AtlasCardType } from "../../core/types";
+import type { AtlasRuntimeDiagnostic } from "../../core/runtimeDiagnostics";
 
 type AtlasCardViewProps = {
   card: AtlasCard;
   allCards: AtlasCard[];
   queries: AtlasCardQuery[];
   dependencyPropertyNames: Set<string>;
+  diagnostics: AtlasRuntimeDiagnostic[];
   selected: boolean;
   highlighted: boolean;
   onPointerDown: (event: PointerEvent<HTMLElement>) => void;
   onPointerMove: (event: PointerEvent<HTMLElement>) => void;
   onPointerUp: (event: PointerEvent<HTMLElement>) => void;
   onPointerCancel: (event: PointerEvent<HTMLElement>) => void;
+  onAttachModule?: (cardId: string, kind: AtlasCardModuleKind, position: { x: number; y: number }) => void;
+  onMoveModule?: (cardId: string, moduleId: string, position: { x: number; y: number }) => void;
+  onSelectDiagnostic?: (diagnostic: AtlasRuntimeDiagnostic) => void;
 };
 
 const TYPE_LABELS: Record<AtlasCardType, string> = {
@@ -32,12 +37,16 @@ export function AtlasCardView({
   allCards,
   queries,
   dependencyPropertyNames,
+  diagnostics,
   selected,
   highlighted,
   onPointerDown,
   onPointerMove,
   onPointerUp,
-  onPointerCancel
+  onPointerCancel,
+  onAttachModule,
+  onMoveModule,
+  onSelectDiagnostic
 }: AtlasCardViewProps) {
   const functionPreview =
     card.type === "function" && card.functionKind === "tagged_sum"
@@ -61,7 +70,20 @@ export function AtlasCardView({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        const kind = event.dataTransfer.getData("application/x-atlas-module-kind") as
+          | AtlasCardModuleKind
+          | "";
+        if (!kind) return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        onAttachModule?.(card.id, kind, {
+          x: Math.round(event.clientX - rect.left),
+          y: Math.round(event.clientY - rect.top)
+        });
+      }}
     >
+      <div className="atlas-card-background-layer" aria-hidden="true" />
       <header>
         <span>{TYPE_LABELS[card.type]}</span>
         <strong>{card.title}</strong>
@@ -89,6 +111,63 @@ export function AtlasCardView({
           ))}
           {card.properties.length > 3 && <span>+{card.properties.length - 3} more</span>}
         </div>
+      )}
+      {(card.modules ?? []).length > 0 && (
+        <div className="atlas-module-layer" aria-label={`${card.title} attached modules`}>
+          {(card.modules ?? []).map((module) => (
+            <button
+              key={module.id}
+              type="button"
+              className={`atlas-attached-module atlas-module-${module.kind}`}
+              style={{
+                left: module.position?.x ?? 12,
+                top: module.position?.y ?? 12
+              }}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                const startX = event.clientX;
+                const startY = event.clientY;
+                const start = module.position ?? { x: 12, y: 12 };
+                const target = event.currentTarget;
+                target.setPointerCapture(event.pointerId);
+                function move(moveEvent: globalThis.PointerEvent) {
+                  onMoveModule?.(card.id, module.id, {
+                    x: Math.round(start.x + moveEvent.clientX - startX),
+                    y: Math.round(start.y + moveEvent.clientY - startY)
+                  });
+                }
+                function end() {
+                  window.removeEventListener("pointermove", move);
+                  window.removeEventListener("pointerup", end);
+                }
+                window.addEventListener("pointermove", move);
+                window.addEventListener("pointerup", end, { once: true });
+              }}
+            >
+              <span>{module.kind}</span>
+              <strong>{module.label}</strong>
+              {module.value && <em>{module.value}{module.unit ? ` ${module.unit}` : ""}</em>}
+            </button>
+          ))}
+        </div>
+      )}
+      {diagnostics.length > 0 && (
+        <aside className="atlas-card-runtime-diagnostics" aria-label={`${card.title} runtime diagnostics`}>
+          {diagnostics.slice(0, 4).map((diagnostic) => (
+            <button
+              key={diagnostic.diagnosticId}
+              type="button"
+              className={`atlas-runtime-diagnostic ${diagnostic.status}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectDiagnostic?.(diagnostic);
+              }}
+            >
+              <span>{diagnostic.label}</span>
+              <strong>{diagnostic.value}{diagnostic.unit ? ` ${diagnostic.unit}` : ""}</strong>
+            </button>
+          ))}
+        </aside>
       )}
       {card.type === "decision" && card.decision && (
         <div className="atlas-function-preview" aria-label={`${card.title} decision metadata`}>

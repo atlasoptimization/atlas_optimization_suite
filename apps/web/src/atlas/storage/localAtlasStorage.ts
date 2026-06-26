@@ -10,6 +10,7 @@ import {
   type AtlasConstraintOperator,
   type AtlasExpression,
   type AtlasFunctionKind,
+  type AtlasCardModuleKind,
   type AtlasGroup,
   type AtlasPropertyKind,
   type AtlasWorkbenchState
@@ -124,6 +125,9 @@ function normalizeAtlasCard(value: unknown): AtlasCard | null {
       : [],
     notes: typeof value.notes === "string" ? value.notes : ""
   };
+  baseCard.modules = Array.isArray(value.modules)
+    ? value.modules.filter(isRecord).map(normalizeModule).filter((module) => module !== null)
+    : [];
   if (cardType === "decision") {
     baseCard.decision = normalizeDecisionMetadata(value.decision);
   }
@@ -218,6 +222,25 @@ function normalizeAtlasGroup(value: unknown): AtlasGroup | null {
   };
 }
 
+function normalizeModule(value: Record<string, unknown>) {
+  const kind = isModuleKind(value.kind) ? value.kind : null;
+  const label = typeof value.label === "string" ? value.label.trim() : "";
+  if (!kind || !label) return null;
+  const rawPosition = isRecord(value.position) ? value.position : {};
+  return {
+    id: typeof value.id === "string" ? value.id : `module_${Math.random().toString(36).slice(2, 9)}`,
+    kind,
+    label,
+    value: typeof value.value === "string" ? value.value : String(value.value ?? ""),
+    unit: typeof value.unit === "string" && value.unit.trim() ? value.unit.trim() : undefined,
+    notes: typeof value.notes === "string" && value.notes.trim() ? value.notes : undefined,
+    position: {
+      x: numberField(rawPosition.x, 12),
+      y: numberField(rawPosition.y, 12)
+    }
+  };
+}
+
 function normalizeAtlasQuery(value: unknown): AtlasCardQuery | null {
   if (!isRecord(value)) return null;
   const id = typeof value.id === "string" ? value.id : "";
@@ -253,6 +276,16 @@ function isAtlasPropertyKind(value: unknown): value is AtlasPropertyKind {
 
 function isAtlasFunctionKind(value: unknown): value is AtlasFunctionKind {
   return typeof value === "string" && ATLAS_FUNCTION_KINDS.includes(value as AtlasFunctionKind);
+}
+
+function isModuleKind(value: unknown): value is AtlasCardModuleKind {
+  return (
+    value === "tag" ||
+    value === "trait" ||
+    value === "property" ||
+    value === "diagnostic" ||
+    value === "note"
+  );
 }
 
 function isConstraintOperator(value: unknown): value is AtlasConstraintOperator {

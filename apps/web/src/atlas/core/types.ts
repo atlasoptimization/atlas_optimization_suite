@@ -84,11 +84,24 @@ export type AtlasCard = {
   constraint?: AtlasConstraintConfig;
   decision?: AtlasDecisionMetadata;
   data?: AtlasCsvData;
+  modules?: AtlasCardModule[];
   title: string;
   position: AtlasPosition;
   tags: AtlasTag[];
   properties: AtlasProperty[];
   notes: string;
+};
+
+export type AtlasCardModuleKind = "tag" | "trait" | "property" | "diagnostic" | "note";
+
+export type AtlasCardModule = {
+  id: string;
+  kind: AtlasCardModuleKind;
+  label: string;
+  value: string;
+  unit?: string;
+  notes?: string;
+  position?: AtlasPosition;
 };
 
 export type AtlasGroup = {
@@ -227,6 +240,21 @@ export type AtlasAction =
       notes?: string;
     }
   | { type: "property.delete"; cardId: string; propertyId: string }
+  | {
+      type: "module.attach";
+      cardId: string;
+      kind: AtlasCardModuleKind;
+      label?: string;
+      value?: string;
+      position?: AtlasPosition;
+    }
+  | {
+      type: "module.update";
+      cardId: string;
+      moduleId: string;
+      patch: Partial<Pick<AtlasCardModule, "label" | "value" | "unit" | "notes" | "position">>;
+    }
+  | { type: "module.delete"; cardId: string; moduleId: string }
   | {
       type: "function.taggedSum.update";
       cardId: string;

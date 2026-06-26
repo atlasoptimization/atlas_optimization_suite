@@ -33,9 +33,11 @@ import {
 } from "../../core/expressions";
 import { createIndexSet, createRangeIndexSet, getIndexSetCards } from "../../core/indexSets";
 import type { AtlasSymbolicPreview } from "../../core/symbolic";
+import type { AtlasRuntimeDiagnostic } from "../../core/runtimeDiagnostics";
 import {
   ATLAS_PROPERTY_KINDS,
   type AtlasCard,
+  type AtlasCardModule,
   type AtlasCardQuery,
   type AtlasConstraintConfig,
   type AtlasConstraintExpression,
@@ -55,6 +57,7 @@ type AtlasInspectorProps = {
   evaluationEntry: AtlasEvaluationEntry | null;
   evaluationMode: AtlasEvaluationMode;
   solutionEvaluationWarning?: string | null;
+  selectedRuntimeDiagnostic?: AtlasRuntimeDiagnostic | null;
   symbolicPreview: AtlasSymbolicPreview | null;
   dependencyHighlightEnabled: boolean;
   onAddTag: (cardId: string, key: string, value: string) => void;
@@ -74,6 +77,12 @@ type AtlasInspectorProps = {
     property: EditablePropertyPayload
   ) => void;
   onDeleteProperty: (cardId: string, propertyId: string) => void;
+  onUpdateModule: (
+    cardId: string,
+    moduleId: string,
+    patch: Partial<Pick<AtlasCardModule, "label" | "value" | "unit" | "notes">>
+  ) => void;
+  onDeleteModule: (cardId: string, moduleId: string) => void;
   onUpdateTaggedSum: (cardId: string, patch: Partial<AtlasTaggedSumConfig>) => void;
   onUpdateObjective: (cardId: string, patch: Partial<Pick<AtlasObjectiveConfig, "direction">>) => void;
   onAddObjectiveTerm: (cardId: string, functionCardId?: string | null) => void;
@@ -142,6 +151,7 @@ export function AtlasInspector({
   evaluationEntry,
   evaluationMode,
   solutionEvaluationWarning,
+  selectedRuntimeDiagnostic,
   symbolicPreview,
   dependencyHighlightEnabled,
   onAddTag,
@@ -151,6 +161,8 @@ export function AtlasInspector({
   onAddProperty,
   onUpdateProperty,
   onDeleteProperty,
+  onUpdateModule,
+  onDeleteModule,
   onUpdateTaggedSum,
   onUpdateObjective,
   onAddObjectiveTerm,
@@ -453,6 +465,27 @@ export function AtlasInspector({
         warning={solutionEvaluationWarning}
       />
       <GeneratedMathPanel preview={symbolicPreview} />
+      {selectedRuntimeDiagnostic?.cardId === card.id && (
+        <section className="atlas-evaluation-panel" aria-label="Selected runtime diagnostic">
+          <header>
+            <h3>Runtime Diagnostic</h3>
+          </header>
+          <dl className="atlas-placeholder-list">
+            <div>
+              <dt>{selectedRuntimeDiagnostic.label}</dt>
+              <dd>{selectedRuntimeDiagnostic.value}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>{selectedRuntimeDiagnostic.status}</dd>
+            </div>
+            <div>
+              <dt>Source</dt>
+              <dd>{selectedRuntimeDiagnostic.source}</dd>
+            </div>
+          </dl>
+        </section>
+      )}
       {card.type === "decision" && (
         <DecisionMetadataEditor card={card} onUpdateCardDetails={onUpdateCardDetails} />
       )}
@@ -750,6 +783,50 @@ export function AtlasInspector({
           )}
         </div>
       </section>
+
+      {(card.modules ?? []).length > 0 && (
+        <section className="atlas-property-editor" aria-label="Attached modules">
+          <header>
+            <h3>Attached Modules</h3>
+            <p className="atlas-muted">Modules are draggable pieces attached to this living card.</p>
+          </header>
+          {(card.modules ?? []).map((module) => (
+            <div key={module.id} className="atlas-property-row">
+              <input
+                value={module.label}
+                onChange={(event) =>
+                  onUpdateModule(card.id, module.id, { label: event.currentTarget.value })
+                }
+                aria-label={`Module label ${module.label}`}
+              />
+              <input
+                value={module.value}
+                onChange={(event) =>
+                  onUpdateModule(card.id, module.id, { value: event.currentTarget.value })
+                }
+                aria-label={`Module value ${module.label}`}
+              />
+              <input
+                value={module.unit ?? ""}
+                onChange={(event) =>
+                  onUpdateModule(card.id, module.id, { unit: event.currentTarget.value })
+                }
+                aria-label={`Module unit ${module.label}`}
+              />
+              <input
+                value={module.notes ?? ""}
+                onChange={(event) =>
+                  onUpdateModule(card.id, module.id, { notes: event.currentTarget.value })
+                }
+                aria-label={`Module notes ${module.label}`}
+              />
+              <button type="button" onClick={() => onDeleteModule(card.id, module.id)}>
+                Delete
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
 
       {card.type === "function" && (
         <TaggedSumEditor

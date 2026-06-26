@@ -8,11 +8,20 @@ import {
   deleteAtlasProperty,
   deleteAtlasTag,
   moveAtlasCard,
+  updateAtlasCardDetails,
   updateAtlasProperty,
   updateAtlasTag
 } from "./cards";
 import { addAtlasGroup, deleteAtlasGroup, updateAtlasGroup } from "./groups";
 import { updateTaggedSumConfig } from "./functions";
+import { updateConstraintConfig } from "./constraints";
+import {
+  addObjectiveTerm,
+  moveObjectiveTerm,
+  removeObjectiveTerm,
+  updateObjectiveConfig,
+  updateObjectiveTerm
+} from "./objectives";
 import {
   addAtlasQuery,
   addAtlasQueryCondition,
@@ -40,6 +49,8 @@ export function atlasReducer(
         selectedGroupId: null,
         selectedQueryId: null
       };
+    case "card.update":
+      return updateAtlasCardDetails(state, action.cardId, action.patch);
     case "card.move":
       return moveAtlasCard(state, action.cardId, action.position);
     case "card.delete":
@@ -93,6 +104,7 @@ export function atlasReducer(
       return deleteAtlasTag(state, action.cardId, action.tagId);
     case "property.add":
       return addAtlasProperty(state, action.cardId, action.name, action.kind, action.value, {
+        indexSetId: action.indexSetId,
         unit: action.unit,
         notes: action.notes
       });
@@ -105,6 +117,7 @@ export function atlasReducer(
         action.kind,
         action.value,
         {
+          indexSetId: action.indexSetId,
           unit: action.unit,
           notes: action.notes
         }
@@ -113,6 +126,24 @@ export function atlasReducer(
       return deleteAtlasProperty(state, action.cardId, action.propertyId);
     case "function.taggedSum.update":
       return updateTaggedSumConfig(state, action.cardId, action.patch);
+    case "objective.update":
+      return updateObjectiveConfig(state, action.cardId, action.patch);
+    case "objective.term.add":
+      return addObjectiveTerm(state, action.cardId, action.functionCardId ?? null);
+    case "objective.term.update":
+      return updateObjectiveTerm(
+        state,
+        action.cardId,
+        action.termId,
+        action.name,
+        action.functionCardId
+      );
+    case "objective.term.remove":
+      return removeObjectiveTerm(state, action.cardId, action.termId);
+    case "objective.term.move":
+      return moveObjectiveTerm(state, action.cardId, action.termId, action.direction);
+    case "constraint.update":
+      return updateConstraintConfig(state, action.cardId, action.patch);
     case "workbench.clear":
       return EMPTY_ATLAS_STATE;
     case "workbench.load":

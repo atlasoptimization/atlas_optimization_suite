@@ -6,6 +6,8 @@ import {
   type AtlasCard,
   type AtlasCardType,
   type AtlasCardQuery,
+  type AtlasConstraintExpression,
+  type AtlasConstraintOperator,
   type AtlasExpression,
   type AtlasFunctionKind,
   type AtlasGroup,
@@ -13,6 +15,8 @@ import {
   type AtlasWorkbenchState
 } from "../core/types";
 import { createTaggedSumConfig } from "../core/functions";
+import { createConstraintConfig } from "../core/constraints";
+import { createObjectiveConfig, createObjectiveTerm } from "../core/objectives";
 
 const STORAGE_KEY = "atlas.optimization.workbench.v0";
 
@@ -105,6 +109,10 @@ function normalizeAtlasCard(value: unknown): AtlasCard | null {
             name: typeof property.name === "string" ? property.name : "",
             kind: isAtlasPropertyKind(property.kind) ? property.kind : "constant",
             value: normalizePropertyValue(property.value),
+            indexSetId:
+              typeof property.indexSetId === "string" && property.indexSetId.trim()
+                ? property.indexSetId.trim()
+                : undefined,
             unit: typeof property.unit === "string" && property.unit.trim()
               ? property.unit.trim()
               : undefined,
@@ -116,6 +124,50 @@ function normalizeAtlasCard(value: unknown): AtlasCard | null {
       : [],
     notes: typeof value.notes === "string" ? value.notes : ""
   };
+  if (cardType === "decision") {
+    baseCard.decision = normalizeDecisionMetadata(value.decision);
+  }
+  if (cardType === "data") {
+    baseCard.data = normalizeCsvData(value.data);
+  }
+
+  if (cardType === "objective") {
+    const objective = isRecord(value.objective)
+      ? createObjectiveConfig({
+          direction: value.objective.direction === "maximize" ? "maximize" : "minimize",
+          terms: Array.isArray(value.objective.terms)
+            ? value.objective.terms
+                .filter(isRecord)
+                .map((term, index) =>
+                  createObjectiveTerm(
+                    typeof term.functionCardId === "string" ? term.functionCardId : null,
+                    {
+                      id: typeof term.id === "string" ? term.id : `term_${id}_${index}`,
+                      name: typeof term.name === "string" ? term.name : `Term ${index + 1}`
+                    }
+                  )
+                )
+            : []
+        })
+      : createObjectiveConfig();
+
+    return { ...baseCard, objective };
+  }
+
+  if (cardType === "constraint") {
+    const constraint = isRecord(value.constraint)
+      ? createConstraintConfig({
+          name: typeof value.constraint.name === "string" ? value.constraint.name : "Constraint",
+          left: normalizeConstraintExpression(value.constraint.left),
+          operator: isConstraintOperator(value.constraint.operator)
+            ? value.constraint.operator
+            : "<=",
+          right: normalizeConstraintExpression(value.constraint.right)
+        })
+      : createConstraintConfig();
+
+    return { ...baseCard, constraint };
+  }
 
   if (cardType !== "function") return baseCard;
 
@@ -203,6 +255,30 @@ function isAtlasFunctionKind(value: unknown): value is AtlasFunctionKind {
   return typeof value === "string" && ATLAS_FUNCTION_KINDS.includes(value as AtlasFunctionKind);
 }
 
+function isConstraintOperator(value: unknown): value is AtlasConstraintOperator {
+  return value === "<=" || value === ">=" || value === "=" || value === "==";
+}
+
+function normalizeConstraintExpression(value: unknown): AtlasConstraintExpression | undefined {
+  if (!isRecord(value) || typeof value.kind !== "string") return undefined;
+
+  if (value.kind === "constant") {
+    return {
+      kind: "constant",
+      value: numberField(value.value)
+    };
+  }
+
+  if (value.kind === "function_ref") {
+    return {
+      kind: "function_ref",
+      functionCardId: typeof value.functionCardId === "string" ? value.functionCardId : null
+    };
+  }
+
+  return undefined;
+}
+
 function normalizeAtlasExpression(value: unknown): AtlasExpression | null {
   if (!isRecord(value) || typeof value.kind !== "string") return null;
 
@@ -247,8 +323,65 @@ function normalizePropertyValue(value: unknown) {
   ) {
     return value;
   }
+  if (isRecord(value) && typeof value.dataCardId === "string" && typeof value.column === "string") {
+    return {
+      dataCardId: value.dataCardId,
+      column: value.column,
+      rowIndex: typeof value.rowIndex === "number" ? value.rowIndex : undefined
+    };
+  }
 
   return null;
+}
+
+function normalizeDecisionMetadata(value: unknown) {
+  const record = isRecord(value) ? value : {};
+  const variableType: "continuous" | "integer" | "binary" =
+    record.variableType === "integer" || record.variableType === "binary"
+      ? record.variableType
+      : "continuous";
+  return {
+    variableType,
+    shape: "scalar" as const,
+    lowerBound: nullableNumber(record.lowerBound),
+    upperBound: nullableNumber(record.upperBound),
+    initialValue: nullableNumber(record.initialValue)
+  };
+}
+
+function normalizeCsvData(value: unknown) {
+  if (!isRecord(value)) return undefined;
+  const columns = Array.isArray(value.columns)
+    ? value.columns.filter((column): column is string => typeof column === "string")
+    : [];
+  return {
+    fileName: typeof value.fileName === "string" ? value.fileName : "data.csv",
+    columns,
+    rowCount: numberField(value.rowCount),
+    previewRows: Array.isArray(value.previewRows)
+      ? value.previewRows.filter(isRecord).map((row) =>
+          Object.fromEntries(
+            Object.entries(row).map(([key, entry]) => [key, String(entry ?? "")])
+          )
+        )
+      : [],
+    indexSet: normalizeIndexSet(value.indexSet)
+  };
+}
+
+function normalizeIndexSet(value: unknown) {
+  if (!isRecord(value)) return undefined;
+  const elements = Array.isArray(value.elements)
+    ? value.elements.map((element) => String(element).trim()).filter(Boolean)
+    : [];
+  return {
+    name: typeof value.name === "string" && value.name.trim() ? value.name.trim() : "Index set",
+    elements
+  };
+}
+
+function nullableNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function numberField(value: unknown, fallback = 0) {

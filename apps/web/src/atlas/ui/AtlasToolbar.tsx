@@ -6,6 +6,10 @@ export type AtlasToolbarAction =
   | "solve"
   | "inspect"
   | "export"
+  | "import"
+  | "saveProject"
+  | "loadProject"
+  | "loadExample"
   | "undo"
   | "redo"
   | "search"
@@ -25,7 +29,11 @@ const primaryActions: Array<{ id: AtlasToolbarAction; label: string }> = [
   { id: "evaluate", label: "Evaluate" },
   { id: "solve", label: "Solve" },
   { id: "inspect", label: "Inspect" },
-  { id: "export", label: "Export" }
+  { id: "export", label: "Export IR" },
+  { id: "import", label: "Import IR" },
+  { id: "saveProject", label: "Save Project" },
+  { id: "loadProject", label: "Load Project" },
+  { id: "loadExample", label: "Load Example" }
 ];
 
 const historyActions: Array<{ id: AtlasToolbarAction; label: string }> = [

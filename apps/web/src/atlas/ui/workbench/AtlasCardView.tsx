@@ -1,5 +1,8 @@
 import type { PointerEvent } from "react";
+import { constraintPreview } from "../../core/constraints";
 import { taggedSumPreview } from "../../core/functions";
+import { indexedPropertyLabel } from "../../core/indexSets";
+import { objectivePreview } from "../../core/objectives";
 import type { AtlasCard, AtlasCardQuery, AtlasCardType } from "../../core/types";
 
 type AtlasCardViewProps = {
@@ -40,6 +43,8 @@ export function AtlasCardView({
     card.type === "function" && card.functionKind === "tagged_sum"
       ? taggedSumPreview(card, queries, allCards)
       : null;
+  const objectiveStructure = card.type === "objective" ? objectivePreview(card, allCards) : null;
+  const constraintStructure = card.type === "constraint" ? constraintPreview(card, allCards) : null;
 
   return (
     <article
@@ -78,11 +83,37 @@ export function AtlasCardView({
               key={property.id}
               className={dependencyPropertyNames.has(property.name) ? "dependency-property" : ""}
             >
-              <strong>{property.name}</strong>
+              <strong>{indexedPropertyLabel(property, allCards)}</strong>
               <em>{formatPropertyValue(property.value)}</em>
             </span>
           ))}
           {card.properties.length > 3 && <span>+{card.properties.length - 3} more</span>}
+        </div>
+      )}
+      {card.type === "decision" && card.decision && (
+        <div className="atlas-function-preview" aria-label={`${card.title} decision metadata`}>
+          <span>
+            <strong>Variable</strong>
+            <em>{card.decision.variableType}</em>
+          </span>
+          <span>
+            <strong>Bounds</strong>
+            <em>
+              {card.decision.lowerBound ?? "-∞"} to {card.decision.upperBound ?? "∞"}
+            </em>
+          </span>
+        </div>
+      )}
+      {card.type === "data" && card.data && (
+        <div className="atlas-function-preview" aria-label={`${card.title} CSV data preview`}>
+          <span>
+            <strong>{card.data.indexSet ? "Index set" : "CSV"}</strong>
+            <em>{card.data.indexSet?.name ?? card.data.fileName}</em>
+          </span>
+          <span>
+            <strong>{card.data.indexSet ? "Elements" : "Rows"}</strong>
+            <em>{card.data.indexSet?.elements.length ?? card.data.rowCount}</em>
+          </span>
         </div>
       )}
       {functionPreview && (
@@ -98,6 +129,28 @@ export function AtlasCardView({
           <span>
             <strong>Matches</strong>
             <em>{functionPreview.matchCount}</em>
+          </span>
+        </div>
+      )}
+      {objectiveStructure && (
+        <div className="atlas-function-preview" aria-label={`${card.title} objective preview`}>
+          <span>
+            <strong>{objectiveStructure.directionLabel}</strong>
+            <em>{objectiveStructure.termCount} terms</em>
+          </span>
+          {objectiveStructure.functionNames.slice(0, 2).map((name, index) => (
+            <span key={`${name}-${index}`}>
+              <strong>Term {index + 1}</strong>
+              <em>{name}</em>
+            </span>
+          ))}
+        </div>
+      )}
+      {constraintStructure && (
+        <div className="atlas-function-preview" aria-label={`${card.title} constraint preview`}>
+          <span>
+            <strong>Constraint</strong>
+            <em>{constraintStructure}</em>
           </span>
         </div>
       )}

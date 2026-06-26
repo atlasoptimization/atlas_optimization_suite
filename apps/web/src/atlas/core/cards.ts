@@ -8,6 +8,8 @@ import type {
   AtlasWorkbenchState
 } from "./types";
 import { createTaggedSumConfig } from "./functions";
+import { createConstraintConfig } from "./constraints";
+import { createObjectiveConfig } from "./objectives";
 import { getAtlasCardTemplate } from "./templates";
 
 export const EMPTY_ATLAS_STATE: AtlasWorkbenchState = {
@@ -40,11 +42,28 @@ export function createAtlasCard(
           taggedSum: createTaggedSumConfig()
         }
       : {};
+  const objectiveDefaults =
+    cardType === "objective" ? { objective: createObjectiveConfig() } : {};
+  const constraintDefaults =
+    cardType === "constraint" ? { constraint: createConstraintConfig() } : {};
+  const decisionDefaults =
+    cardType === "decision"
+      ? {
+          decision: {
+            variableType: "continuous" as const,
+            shape: "scalar" as const,
+            lowerBound: 0
+          }
+        }
+      : {};
 
   return {
     id: options.id ?? makeAtlasId("card"),
     type: cardType,
     ...functionDefaults,
+    ...objectiveDefaults,
+    ...constraintDefaults,
+    ...decisionDefaults,
     title: DEFAULT_CARD_TITLES[cardType],
     position: options.position ?? {
       x: 760 + (index % 4) * 260,
@@ -86,6 +105,7 @@ export function addAtlasCardFromTemplate(
     tags: template.defaultTags.map((tag) => createAtlasTag(tag.key, tag.value)),
     properties: template.defaultProperties.map((property) =>
       createAtlasProperty(property.name, property.kind, property.value, {
+        indexSetId: property.indexSetId,
         unit: property.unit,
         notes: property.notes
       })
@@ -110,6 +130,27 @@ export function moveAtlasCard(
     ...state,
     cards: state.cards.map((card) =>
       card.id === cardId ? { ...card, position } : card
+    )
+  };
+}
+
+export function updateAtlasCardDetails(
+  state: AtlasWorkbenchState,
+  cardId: string,
+  patch: Partial<Pick<AtlasCard, "title" | "notes" | "decision" | "data">>
+): AtlasWorkbenchState {
+  return {
+    ...state,
+    cards: state.cards.map((card) =>
+      card.id === cardId
+        ? {
+            ...card,
+            title: patch.title !== undefined ? patch.title.trim() || card.title : card.title,
+            notes: patch.notes !== undefined ? patch.notes : card.notes,
+            decision: patch.decision !== undefined ? patch.decision : card.decision,
+            data: patch.data !== undefined ? patch.data : card.data
+          }
+        : card
     )
   };
 }
@@ -195,7 +236,7 @@ export function createAtlasProperty(
   name: string,
   kind: AtlasPropertyKind,
   value: AtlasProperty["value"],
-  options: { id?: string; unit?: string; notes?: string } = {}
+  options: { id?: string; indexSetId?: string; unit?: string; notes?: string } = {}
 ): AtlasProperty {
   const trimmedName = name.trim();
   if (!trimmedName) throw new Error("Property name is required.");
@@ -207,6 +248,7 @@ export function createAtlasProperty(
     name: trimmedName,
     kind,
     value,
+    ...(options.indexSetId ? { indexSetId: options.indexSetId } : {}),
     ...(unit ? { unit } : {}),
     ...(notes ? { notes } : {})
   };
@@ -218,7 +260,7 @@ export function addAtlasProperty(
   name: string,
   kind: AtlasPropertyKind,
   value: AtlasProperty["value"],
-  options: { id?: string; unit?: string; notes?: string } = {}
+  options: { id?: string; indexSetId?: string; unit?: string; notes?: string } = {}
 ): AtlasWorkbenchState {
   const property = createAtlasProperty(name, kind, value, options);
 
@@ -239,7 +281,7 @@ export function updateAtlasProperty(
   name: string,
   kind: AtlasPropertyKind,
   value: AtlasProperty["value"],
-  options: { unit?: string; notes?: string } = {}
+  options: { indexSetId?: string; unit?: string; notes?: string } = {}
 ): AtlasWorkbenchState {
   const nextProperty = createAtlasProperty(name, kind, value, {
     ...options,

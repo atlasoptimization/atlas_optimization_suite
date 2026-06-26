@@ -114,6 +114,15 @@ Current implementation status:
 - Batch 3 / Prompt 2 added a serializable expression reference model, property-name collection from selected query matches, missing-property diagnostics, a property selector panel, expression preview rendering, and JSON preview for simple property/literal/multiply references without evaluation.
 - Batch 3 / Prompt 3 added Function-card `TaggedSum` configuration with query selection, simple property/property and property/literal expressions, card-face previews, selected-function match highlighting, missing-property diagnostics, and local persistence without numerical evaluation.
 - Batch 3 / Prompt 4 added transient Function-card dependency visualization: selected TaggedSum cards highlight matched query cards, mark expression properties on those cards, and show query/match/property/missing-property summaries with a highlight toggle. Dependency lines remain future work because the current pan/zoom workbench does not provide stable edge primitives yet.
+- Batch 4 / Prompt 1 added Objective-card configuration with minimize/maximize direction, ordered editable Function-card terms, compact card previews, bottom-dock objective listings, objective dependency summaries, and transient highlighting for referenced functions and focused term participants.
+- Batch 4 / Prompt 2 added Constraint-card configuration with left/right Function-or-constant expressions, `<=`, `=`, and `==` operators, compact mathematical previews, bottom-dock constraint listings, dependency summaries, and transient highlighting through referenced functions.
+- Batch 4 / Prompt 3 added a solver-independent prototype evaluation subsystem for constants, property references, multiplication/addition, TaggedSum functions, objectives, and constraint sides, with toolbar-triggered evaluation results and readable diagnostics in the inspector.
+- Batch 4 / Prompt 4 added backend-independent symbolic mathematics rendering for TaggedSum, objectives, and constraints, including generated-math inspector previews and expandable participating-object details.
+- Batch 5A / Prompts 1-3 added a separate Python `backend/atlas_opt` modeling core skeleton, Pydantic Atlas IR schema models, semantic `AtlasDesk` registries, card/property lookup helpers, diagnostics, backend README, and pytest coverage. FastAPI and CVXPY remain separate future layers.
+- Batch 5A / Prompts 4-6 added the Python typed-tag query engine, structured expression AST/evaluator, and semantic TaggedSum function with deterministic query results, property diagnostics, dependency extraction, symbolic previews, and `AtlasDesk.evaluate_query(...)` / `AtlasDesk.evaluate_function(...)` integration.
+- Batch 5A / Prompts 7-8 added semantic Objective, Constraint, KPI, and Report objects; `AtlasDesk` objective/constraint/KPI evaluation; `AtlasOptimizer` orchestration with validate/evaluate/generate-code/solve methods; and thin FastAPI routes in `backend/atlas_api.py`. CVXPY remains unimplemented, and local FastAPI endpoint tests are skipped until the declared backend dependency is installed.
+- Batch 5 / Prompts 1-3 added explicit frontend Atlas IR export/import with schema version `0.1`, readable JSON download, roundtrip validation helpers, centralized backend API client configuration, backend health/CORS route support, and toolbar Inspect validation that sends IR to `/validate` while keeping local editing usable if the backend is unavailable.
+- Batch 5 / Prompts 4-5 wired frontend Evaluate/Solve to backend `/evaluate` and `/solve` with local evaluation fallback, added backend evaluation result summaries, implemented a minimal CVXPY compiler/solve backend for continuous scalar linear models, and exposed generated readable CVXPY code. Local CVXPY-dependent tests skip until the declared backend dependency is installed.
 - The disposition flags above remain valid: the existing Data Science Deck tabletop remains `ADAPT`, while deck-specific piles, draw modes, asset pipelines, and guide/demo content remain `QUARANTINE` until Atlas no longer depends on them.
 
 ## Frontend/Backend Split
@@ -235,3 +244,22 @@ Commands to run for this audit:
 - `pnpm --filter @dsd/web build`
 
 No lint command is currently defined in root or `apps/web/package.json`. If lint is needed in a later round, add an explicit script before treating lint as a required check.
+
+## Batch 6 Prototype Status
+
+- Solution results now persist in the right dock after Solve. The panel renders empty, loading, success, error, and stale states; shows solver status, objective value, diagnostics, decision variable values, constraint residuals when returned, and generated CVXPY code in a collapsible section.
+- Decision results map back to Decision cards or decision-ref properties. Constraint results map back to their source Constraint cards, which reuses existing dependency highlighting.
+- Evaluate has explicit modes for current initialization values and latest solution values. Latest-solution evaluation uses returned decision variable values and warns when the solution is stale or unavailable.
+- Project JSON save/load wraps the Atlas IR in a small project envelope while preserving direct IR export/import.
+- The built-in production planning example contains three product object cards tagged `type=product` and `factory=A`, decision-backed `production_quantity` properties, TaggedSum cards for profit and machine hours, a maximize-profit objective, and a machine-capacity constraint. The example is intentionally data-only; no evaluator/compiler logic is specific to products or factories.
+- The command palette is available from the toolbar and `Ctrl/Cmd+K`. It supports quick card creation, template creation, load example, save project, export IR, evaluate, solve, and card search across title, card type, tags, and property names.
+- Prototype readiness cleanup removed the disabled search placeholder, refreshed stale action copy, expanded regression tests for the core example/project/solution/search workflow, and documented setup, supported solver subset, and known limitations in the README.
+- Batch 7 adds a structured linear term editor for TaggedSum expressions, decision-card scalar variable metadata (`continuous`, `integer`, `binary`, bounds, initial value), and CSV Data-card metadata/preview upload. The backend schema/evaluator/compiler now accepts decision metadata, emits mixed-integer solver warnings, compiles binary/integer CVXPY variables when CVXPY is installed, resolves small CSV `data_ref` preview values, and diagnoses missing data columns and unsupported nonlinear property products.
+- Batch 7 / Prompt 4 adds finite Index Set support as Data-card metadata and lets properties/decision references declare `indexSetId`. The UI can create a Weeks 1..12 set and display `production_quantity[Weeks]` in cards and symbolic previews. Backend schema preserves indexed metadata; scalar CVXPY compilation intentionally warns that indexed expansion is not implemented yet.
+
+Verification for this batch:
+
+- `pnpm test`
+- `pnpm --filter @dsd/web build`
+- `cd backend && python3 -m pytest`
+- `cd backend && python3 -m compileall atlas_opt atlas_api.py`

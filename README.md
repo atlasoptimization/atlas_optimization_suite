@@ -163,16 +163,36 @@ pnpm sync:assets
 
 The default local app entry now opens the Atlas Optimization Suite prototype. The original Data Science Deck remains available at `?app=deck` or `#deck`.
 
+Start the Atlas frontend:
+
+```bash
+pnpm dev
+```
+
+Start the Atlas backend in another shell:
+
+```bash
+cd backend
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -e .
+uvicorn atlas_api:app --reload
+```
+
+The frontend uses `http://localhost:8000` by default. Override it with `VITE_ATLAS_BACKEND_URL` when needed.
+
 Run tests:
 
 ```bash
 pnpm test
+cd backend && python3 -m pytest
 ```
 
 Build the web app:
 
 ```bash
 pnpm --filter @dsd/web build
+cd backend && python3 -m compileall atlas_opt atlas_api.py
 ```
 
 Audit public/runtime output for private paths:
@@ -180,6 +200,42 @@ Audit public/runtime output for private paths:
 ```bash
 pnpm audit:release-paths
 ```
+
+## Atlas Optimization Suite Prototype
+
+Atlas is the default app in local development. It is a visual optimization workbench with:
+
+- infinite-style pan/zoom card desk
+- Object, Decision, Data, Function, Constraint, and Objective cards
+- typed tags, editable properties, templates, groups, and query-based indexing
+- TaggedSum function cards
+- Objective and Constraint editors
+- frontend and backend evaluation
+- minimal CVXPY solve flow for continuous scalar linear models
+- persistent Solution panel with solver status, objective value, decision values, constraint residuals, diagnostics, and generated CVXPY code
+- command palette with `Ctrl/Cmd+K`
+- Atlas IR export/import and Atlas project save/load
+- built-in production planning example via Load Example
+
+Current supported modeling subset:
+
+- continuous nonnegative scalar decision variables
+- numeric constants
+- property references
+- addition and multiplication by numeric constants/properties in the supported linear slice
+- TaggedSum over query-selected cards
+- single objective assembled from Function card terms
+- constraints using `<=`, `>=`, `=`, or `==`
+
+Known limitations:
+
+- no integer, binary, or vector decisions yet
+- no arbitrary formula parser
+- no nonlinear atom library
+- no sensitivity analysis
+- no semantic group membership; groups are visual only
+- backend solving requires optional Python dependencies such as FastAPI and CVXPY to be installed
+- public static deployments may not include a running backend
 
 ## Deployment Profiles
 

@@ -35,6 +35,14 @@ export const ATLAS_CARD_TEMPLATES: AtlasCardTemplate[] = [
     description: "A generic data source or input reference."
   },
   {
+    id: "index-set",
+    name: "Index Set",
+    cardType: "data",
+    defaultTags: [{ key: "type", value: "index_set" }],
+    defaultProperties: [],
+    description: "A finite named index set such as weeks, scenarios, products, or machines."
+  },
+  {
     id: "generic-function",
     name: "Generic Function",
     cardType: "function",

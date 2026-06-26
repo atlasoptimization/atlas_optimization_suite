@@ -13,6 +13,7 @@ import {
   deleteAtlasProperty,
   deleteAtlasTag,
   updateAtlasProperty,
+  updateAtlasCardDetails,
   updateAtlasTag,
   moveAtlasCard
 } from "../src/atlas/core/cards";
@@ -29,13 +30,22 @@ import {
   addAtlasQueryCondition
 } from "../src/atlas/core/queries";
 import {
+  buildLinearExpressionFromTerms,
   collectPropertyNamesForQuery,
   createLiteralExpression,
+  createLinearTermDraft,
   createMultiplyExpression,
   createPropertyReferenceExpression,
   expressionPreview,
+  validateLinearExpression,
   getMissingPropertyCards
 } from "../src/atlas/core/expressions";
+import { parseAtlasCsv } from "../src/atlas/core/csv";
+import {
+  createIndexSet,
+  createRangeIndexSet,
+  indexedPropertyLabel
+} from "../src/atlas/core/indexSets";
 import {
   buildTaggedSumExpression,
   createTaggedSumConfig,
@@ -45,6 +55,60 @@ import {
   taggedSumPreview,
   updateTaggedSumConfig
 } from "../src/atlas/core/functions";
+import {
+  addObjectiveTerm,
+  createObjectiveConfig,
+  getObjectiveDependencySummary,
+  moveObjectiveTerm,
+  objectivePreview,
+  updateObjectiveConfig,
+  updateObjectiveTerm
+} from "../src/atlas/core/objectives";
+import {
+  constraintPreview,
+  createConstantConstraintExpression,
+  createConstraintConfig,
+  createFunctionConstraintExpression,
+  getConstraintDependencySummary,
+  updateConstraintConfig
+} from "../src/atlas/core/constraints";
+import {
+  evaluateAtlasWorkbench,
+  evaluateExpression
+} from "../src/atlas/core/evaluator";
+import {
+  renderCardSymbolicPreview,
+  renderExpressionSymbol
+} from "../src/atlas/core/symbolic";
+import {
+  exportAtlasIR,
+  importAtlasIR,
+  serializeAtlasIR,
+  validateAtlasIR
+} from "../src/atlas/core/ir";
+import { createProductionPlanningExample } from "../src/atlas/core/examples";
+import {
+  createAtlasProjectFile,
+  importAtlasProject,
+  serializeAtlasProject
+} from "../src/atlas/core/project";
+import {
+  parseAtlasSolveResult,
+  resolveSolutionVariableTarget,
+  type AtlasSolutionState
+} from "../src/atlas/core/solution";
+import {
+  createAtlasCommands,
+  filterAtlasCommands,
+  searchAtlasCards
+} from "../src/atlas/core/search";
+import {
+  checkAtlasBackendHealth,
+  evaluateAtlasModel,
+  generateAtlasCode,
+  solveAtlasModel,
+  validateAtlasModel
+} from "../src/atlas/api/backendClient";
 import { atlasReducer } from "../src/atlas/core/reducer";
 import { normalizeAtlasState } from "../src/atlas/storage/localAtlasStorage";
 import { getAtlasCardTemplate } from "../src/atlas/core/templates";
@@ -53,6 +117,8 @@ import { AtlasApp } from "../src/atlas/ui/AtlasApp";
 import { AtlasCardView } from "../src/atlas/ui/workbench/AtlasCardView";
 import { AtlasGroupView } from "../src/atlas/ui/workbench/AtlasGroupView";
 import { AtlasExpressionPreview } from "../src/atlas/ui/query/AtlasExpressionPreview";
+import { AtlasSolutionPanel } from "../src/atlas/ui/solution/AtlasSolutionPanel";
+import { AtlasSearchPalette } from "../src/atlas/ui/search/AtlasSearchPalette";
 
 function emptyAtlasState(): AtlasWorkbenchState {
   return {
@@ -95,6 +161,25 @@ describe("Atlas app skeleton", () => {
 
     expect(html).toContain("Atlas Optimization Suite");
   });
+
+  it("renders an active command palette with search and commands", () => {
+    const state = createProductionPlanningExample();
+    const html = renderToString(
+      <AtlasSearchPalette
+        cards={state.cards}
+        templates={[]}
+        onClose={() => undefined}
+        onSelectCard={() => undefined}
+        onRunCommand={() => undefined}
+      />
+    );
+
+    expect(html).toContain("Command palette");
+    expect(html).toContain("Create Object card");
+    expect(html).toContain("Load production planning example");
+    expect(html).toContain("Search Atlas model and commands");
+    expect(html).not.toContain("disabled");
+  });
 });
 
 describe("Atlas card model", () => {
@@ -127,6 +212,17 @@ describe("Atlas card model", () => {
     expect(moved.cards[0]?.position).toEqual({ x: 20, y: 30 });
     expect(deleted.cards).toHaveLength(0);
     expect(deleted.selectedCardId).toBeNull();
+  });
+
+  it("updates card title and notes", () => {
+    const withCard = addAtlasCard(emptyAtlasState(), "objective", "objective-card");
+    const updated = updateAtlasCardDetails(withCard, "objective-card", {
+      title: "Profit objective",
+      notes: "Primary optimization target"
+    });
+
+    expect(updated.cards[0]?.title).toBe("Profit objective");
+    expect(updated.cards[0]?.notes).toBe("Primary optimization target");
   });
 
   it("renders an Atlas card component", () => {
@@ -531,6 +627,94 @@ describe("Atlas card model", () => {
     expect(expressionPreview(expression)).toBe("unit_cost x 12");
   });
 
+  it("builds and validates structured linear expression terms", () => {
+    const expression = buildLinearExpressionFromTerms("query-products", [
+      createLinearTermDraft({ id: "term-a", coefficient: "2", propertyName: "production_quantity" }),
+      createLinearTermDraft({ id: "term-b", coefficient: "5", propertyName: "storage_quantity" })
+    ]);
+
+    expect(expression).toEqual({
+      kind: "add",
+      terms: [
+        {
+          kind: "multiply",
+          left: { kind: "literal", value: 2 },
+          right: {
+            kind: "property_ref",
+            queryId: "query-products",
+            propertyName: "production_quantity"
+          }
+        },
+        {
+          kind: "multiply",
+          left: { kind: "literal", value: 5 },
+          right: {
+            kind: "property_ref",
+            queryId: "query-products",
+            propertyName: "storage_quantity"
+          }
+        }
+      ]
+    });
+  });
+
+  it("warns when property times property is nonlinear", () => {
+    const query = createAtlasQuery({
+      id: "query-products",
+      includeTags: [{ id: "condition-type", key: "type", value: "product" }]
+    });
+    const card = {
+      ...createAtlasCard("object", { id: "product-card" }),
+      tags: [{ id: "tag-type", key: "type", value: "product" }],
+      properties: [
+        { id: "prop-a", name: "a", kind: "decision_ref" as const, value: "decision-a" },
+        { id: "prop-b", name: "b", kind: "decision_ref" as const, value: "decision-b" }
+      ]
+    };
+    const expression = createMultiplyExpression(
+      createPropertyReferenceExpression("query-products", "a"),
+      createPropertyReferenceExpression("query-products", "b")
+    );
+
+    expect(validateLinearExpression(expression, [card], query)[0]?.message).toContain(
+      "Property x property"
+    );
+  });
+
+  it("parses CSV data for Data cards", () => {
+    const parsed = parseAtlasCsv("product,demand\nA,10\nB,12\n", "Demand.csv");
+
+    expect(parsed.fileName).toBe("Demand.csv");
+    expect(parsed.columns).toEqual(["product", "demand"]);
+    expect(parsed.rowCount).toBe(2);
+    expect(parsed.previewRows[0]).toEqual({ product: "A", demand: "10" });
+  });
+
+  it("creates and labels finite index sets for indexed properties", () => {
+    const weeks = createRangeIndexSet("Weeks", 1, 12);
+    const indexCard = {
+      ...createAtlasCard("data", { id: "weeks" }),
+      title: "Weeks",
+      data: {
+        fileName: "Weeks.index",
+        columns: [],
+        rowCount: 0,
+        previewRows: [],
+        indexSet: weeks
+      }
+    };
+    const property = createAtlasProperty("production_quantity", "decision_ref", "decision-prod", {
+      indexSetId: "weeks"
+    });
+
+    expect(createIndexSet(" Scenarios ", [" base ", " stress "])).toEqual({
+      name: "Scenarios",
+      elements: ["base", "stress"]
+    });
+    expect(weeks.elements).toEqual(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]);
+    expect(indexedPropertyLabel(property, [indexCard])).toBe("production_quantity[Weeks]");
+  });
+
   it("renders an expression preview component", () => {
     const expression = createMultiplyExpression(
       createPropertyReferenceExpression("query-products", "unit_cost"),
@@ -799,5 +983,649 @@ describe("Atlas card model", () => {
       }
     });
     expect(normalized.selectedCardId).toBe("function-sum");
+  });
+
+  it("adds, updates, and reorders objective terms", () => {
+    const withObjective = addAtlasCard(emptyAtlasState(), "objective", "objective-card");
+    const configured = updateObjectiveConfig(withObjective, "objective-card", {
+      direction: "maximize"
+    });
+    const withFirstTerm = addObjectiveTerm(configured, "objective-card", "function-a");
+    const withSecondTerm = addObjectiveTerm(withFirstTerm, "objective-card", "function-b");
+    const firstTermId = withSecondTerm.cards[0]?.objective?.terms[0]?.id ?? "";
+    const secondTermId = withSecondTerm.cards[0]?.objective?.terms[1]?.id ?? "";
+    const renamed = updateObjectiveTerm(
+      withSecondTerm,
+      "objective-card",
+      secondTermId,
+      "Revenue",
+      "function-b"
+    );
+    const reordered = moveObjectiveTerm(renamed, "objective-card", secondTermId, "up");
+
+    expect(reordered.cards[0]?.objective?.direction).toBe("maximize");
+    expect(reordered.cards[0]?.objective?.terms.map((term) => term.id)).toEqual([
+      secondTermId,
+      firstTermId
+    ]);
+    expect(reordered.cards[0]?.objective?.terms[0]).toMatchObject({
+      name: "Revenue",
+      functionCardId: "function-b"
+    });
+  });
+
+  it("extracts objective dependencies through referenced Function cards", () => {
+    const product = {
+      ...createAtlasCard("object", { id: "product-card" }),
+      title: "Product",
+      tags: [{ id: "tag-type", key: "type", value: "product" }],
+      properties: [
+        { id: "prop-cost", name: "unit_cost", kind: "constant" as const, value: 12 }
+      ]
+    };
+    const query = createAtlasQuery({
+      id: "query-products",
+      includeTags: [{ id: "condition-type", key: "type", value: "product" }]
+    });
+    const functionCard = {
+      ...createAtlasCard("function", { id: "function-cost" }),
+      title: "Total cost",
+      taggedSum: createTaggedSumConfig({
+        queryId: query.id,
+        expression: buildTaggedSumExpression({
+          queryId: query.id,
+          primaryProperty: "unit_cost"
+        }),
+        displayName: "Total cost"
+      })
+    };
+    const objective = {
+      ...createAtlasCard("objective", { id: "objective-card" }),
+      objective: createObjectiveConfig({
+        direction: "minimize",
+        terms: [{ id: "term-cost", name: "Cost", functionCardId: functionCard.id }]
+      })
+    };
+    const summary = getObjectiveDependencySummary(
+      objective,
+      [product, functionCard, objective],
+      [query],
+      { termId: "term-cost" }
+    );
+
+    expect(summary.functionCards.map((card) => card.id)).toEqual(["function-cost"]);
+    expect(summary.participatingCards.map((card) => card.id)).toEqual(["product-card"]);
+    expect(objectivePreview(objective, [functionCard]).directionLabel).toBe("Minimize");
+  });
+
+  it("updates and previews constraint cards", () => {
+    const withConstraint = addAtlasCard(emptyAtlasState(), "constraint", "constraint-card");
+    const updated = updateConstraintConfig(withConstraint, "constraint-card", {
+      name: "Capacity",
+      left: createFunctionConstraintExpression("function-hours"),
+      operator: "<=",
+      right: createConstantConstraintExpression(100)
+    });
+    const functionCard = {
+      ...createAtlasCard("function", { id: "function-hours" }),
+      title: "Total hours"
+    };
+    const constraint = updated.cards[0];
+
+    expect(constraint?.constraint).toEqual(
+      createConstraintConfig({
+        name: "Capacity",
+        left: createFunctionConstraintExpression("function-hours"),
+        operator: "<=",
+        right: createConstantConstraintExpression(100)
+      })
+    );
+    expect(constraint ? constraintPreview(constraint, [functionCard, constraint]) : "").toBe(
+      "Total hours <= 100"
+    );
+  });
+
+  it("extracts constraint dependencies through referenced Function cards", () => {
+    const product = {
+      ...createAtlasCard("object", { id: "product-card" }),
+      tags: [{ id: "tag-type", key: "type", value: "product" }],
+      properties: [
+        { id: "prop-hours", name: "machine_hours", kind: "constant" as const, value: 4 }
+      ]
+    };
+    const query = createAtlasQuery({
+      id: "query-products",
+      includeTags: [{ id: "condition-type", key: "type", value: "product" }]
+    });
+    const functionCard = {
+      ...createAtlasCard("function", { id: "function-hours" }),
+      title: "Total hours",
+      taggedSum: createTaggedSumConfig({
+        queryId: query.id,
+        expression: buildTaggedSumExpression({
+          queryId: query.id,
+          primaryProperty: "machine_hours"
+        }),
+        displayName: "Total hours"
+      })
+    };
+    const constraint = {
+      ...createAtlasCard("constraint", { id: "constraint-card" }),
+      constraint: createConstraintConfig({
+        name: "Capacity",
+        left: createFunctionConstraintExpression(functionCard.id),
+        operator: "<=",
+        right: createConstantConstraintExpression(100)
+      })
+    };
+    const summary = getConstraintDependencySummary(
+      constraint,
+      [product, functionCard, constraint],
+      [query]
+    );
+
+    expect(summary.functionCards.map((card) => card.id)).toEqual(["function-hours"]);
+    expect(summary.participatingCards.map((card) => card.id)).toEqual(["product-card"]);
+  });
+
+  it("evaluates TaggedSum functions from current property values", () => {
+    const productA = {
+      ...createAtlasCard("object", { id: "product-a" }),
+      tags: [{ id: "tag-type-a", key: "type", value: "product" }],
+      properties: [
+        { id: "prop-cost-a", name: "unit_cost", kind: "constant" as const, value: 12 },
+        { id: "prop-qty-a", name: "production_quantity", kind: "decision_ref" as const, value: 2 }
+      ]
+    };
+    const productB = {
+      ...createAtlasCard("object", { id: "product-b" }),
+      tags: [{ id: "tag-type-b", key: "type", value: "product" }],
+      properties: [
+        { id: "prop-cost-b", name: "unit_cost", kind: "constant" as const, value: 8 },
+        { id: "prop-qty-b", name: "production_quantity", kind: "decision_ref" as const, value: 3 }
+      ]
+    };
+    const query = createAtlasQuery({
+      id: "query-products",
+      includeTags: [{ id: "condition-type", key: "type", value: "product" }]
+    });
+    const functionCard = {
+      ...createAtlasCard("function", { id: "function-cost" }),
+      taggedSum: createTaggedSumConfig({
+        queryId: query.id,
+        expression: buildTaggedSumExpression({
+          queryId: query.id,
+          primaryProperty: "unit_cost",
+          secondaryProperty: "production_quantity"
+        }),
+        displayName: "Total cost"
+      })
+    };
+    const report = evaluateAtlasWorkbench({
+      ...emptyAtlasState(),
+      cards: [productA, productB, functionCard],
+      queries: [query]
+    });
+
+    expect(report.entries["function-cost"]?.value).toEqual({ kind: "number", value: 48 });
+    expect(report.entries["function-cost"]?.diagnostics).toEqual([]);
+  });
+
+  it("reports missing properties and invalid expressions during evaluation", () => {
+    const product = {
+      ...createAtlasCard("object", { id: "product-card" }),
+      tags: [{ id: "tag-type", key: "type", value: "product" }]
+    };
+    const query = createAtlasQuery({
+      id: "query-products",
+      includeTags: [{ id: "condition-type", key: "type", value: "product" }]
+    });
+    const functionCard = {
+      ...createAtlasCard("function", { id: "function-cost" }),
+      taggedSum: createTaggedSumConfig({
+        queryId: query.id,
+        expression: buildTaggedSumExpression({
+          queryId: query.id,
+          primaryProperty: "unit_cost"
+        }),
+        displayName: "Total cost"
+      })
+    };
+    const invalid = evaluateExpression(
+      { kind: "unknown" } as Parameters<typeof evaluateExpression>[0],
+      product
+    );
+    const report = evaluateAtlasWorkbench({
+      ...emptyAtlasState(),
+      cards: [product, functionCard],
+      queries: [query]
+    });
+
+    expect(report.entries["function-cost"]?.value).toBeNull();
+    expect(report.entries["function-cost"]?.diagnostics[0]?.message).toContain("missing property");
+    expect(invalid.diagnostics[0]?.message).toContain("not supported");
+  });
+
+  it("evaluates objectives and constraint sides", () => {
+    const product = {
+      ...createAtlasCard("object", { id: "product-card" }),
+      tags: [{ id: "tag-type", key: "type", value: "product" }],
+      properties: [
+        { id: "prop-cost", name: "unit_cost", kind: "constant" as const, value: 5 },
+        { id: "prop-qty", name: "production_quantity", kind: "decision_ref" as const, value: 4 }
+      ]
+    };
+    const query = createAtlasQuery({
+      id: "query-products",
+      includeTags: [{ id: "condition-type", key: "type", value: "product" }]
+    });
+    const functionCard = {
+      ...createAtlasCard("function", { id: "function-cost" }),
+      title: "Total cost",
+      taggedSum: createTaggedSumConfig({
+        queryId: query.id,
+        expression: buildTaggedSumExpression({
+          queryId: query.id,
+          primaryProperty: "unit_cost",
+          secondaryProperty: "production_quantity"
+        }),
+        displayName: "Total cost"
+      })
+    };
+    const objective = {
+      ...createAtlasCard("objective", { id: "objective-card" }),
+      objective: createObjectiveConfig({
+        direction: "minimize",
+        terms: [{ id: "term-cost", name: "Cost", functionCardId: functionCard.id }]
+      })
+    };
+    const constraint = {
+      ...createAtlasCard("constraint", { id: "constraint-card" }),
+      constraint: createConstraintConfig({
+        name: "Budget",
+        left: createFunctionConstraintExpression(functionCard.id),
+        operator: "<=",
+        right: createConstantConstraintExpression(25)
+      })
+    };
+    const report = evaluateAtlasWorkbench({
+      ...emptyAtlasState(),
+      cards: [product, functionCard, objective, constraint],
+      queries: [query]
+    });
+
+    expect(report.entries["objective-card"]?.value).toEqual({ kind: "number", value: 20 });
+    expect(report.entries["constraint-card"]?.value).toEqual({
+      kind: "constraint",
+      left: 20,
+      right: 25,
+      satisfied: true
+    });
+  });
+
+  it("renders symbolic TaggedSum, objective, and constraint mathematics", () => {
+    const query = createAtlasQuery({
+      id: "query-products",
+      includeTags: [
+        { id: "condition-type", key: "type", value: "product" },
+        { id: "condition-factory", key: "factory", value: "A" }
+      ]
+    });
+    const functionCard = {
+      ...createAtlasCard("function", { id: "function-cost" }),
+      title: "Total cost",
+      taggedSum: createTaggedSumConfig({
+        queryId: query.id,
+        expression: buildTaggedSumExpression({
+          queryId: query.id,
+          primaryProperty: "unit_cost",
+          secondaryProperty: "production_quantity"
+        }),
+        displayName: "Total cost"
+      })
+    };
+    const objective = {
+      ...createAtlasCard("objective", { id: "objective-card" }),
+      objective: createObjectiveConfig({
+        direction: "minimize",
+        terms: [{ id: "term-cost", name: "Cost", functionCardId: functionCard.id }]
+      })
+    };
+    const constraint = {
+      ...createAtlasCard("constraint", { id: "constraint-card" }),
+      constraint: createConstraintConfig({
+        left: createFunctionConstraintExpression(functionCard.id),
+        operator: "<=",
+        right: createConstantConstraintExpression(100)
+      })
+    };
+    const state = {
+      ...emptyAtlasState(),
+      cards: [functionCard, objective, constraint],
+      queries: [query]
+    };
+
+    expect(renderExpressionSymbol(functionCard.taggedSum?.expression ?? createLiteralExpression(0))).toBe(
+      "unit_cost × production_quantity"
+    );
+    expect(renderCardSymbolicPreview(functionCard, state)?.expression).toBe(
+      "Σ(unit_cost × production_quantity | type=product, factory=A)"
+    );
+    expect(renderCardSymbolicPreview(objective, state)?.expression).toContain("min Σ(");
+    expect(renderCardSymbolicPreview(constraint, state)?.expression).toContain("<= 100");
+  });
+
+  it("renders indexed properties in symbolic previews", () => {
+    const query = createAtlasQuery({
+      id: "query-products",
+      includeTags: [{ id: "condition-type", key: "type", value: "product" }]
+    });
+    const weeks = {
+      ...createAtlasCard("data", { id: "weeks" }),
+      data: {
+        fileName: "Weeks.index",
+        columns: [],
+        rowCount: 0,
+        previewRows: [],
+        indexSet: createRangeIndexSet("Weeks", 1, 12)
+      }
+    };
+    const product = {
+      ...createAtlasCard("object", { id: "product-card" }),
+      tags: [{ id: "tag-type", key: "type", value: "product" }],
+      properties: [
+        createAtlasProperty("production_quantity", "decision_ref", "decision-prod", {
+          id: "prop-quantity",
+          indexSetId: "weeks"
+        })
+      ]
+    };
+    const functionCard = {
+      ...createAtlasCard("function", { id: "function-production" }),
+      taggedSum: createTaggedSumConfig({
+        queryId: query.id,
+        expression: createPropertyReferenceExpression(query.id, "production_quantity")
+      })
+    };
+
+    expect(
+      renderCardSymbolicPreview(functionCard, {
+        ...emptyAtlasState(),
+        cards: [weeks, product, functionCard],
+        queries: [query]
+      })?.expression
+    ).toContain("production_quantity[Weeks]");
+  });
+
+  it("serializes Atlas IR with schema version", () => {
+    const state = addAtlasCard(emptyAtlasState(), "object", "product-card");
+    const ir = exportAtlasIR(state, { exportedAt: "2026-01-01T00:00:00.000Z" });
+
+    expect(ir.schemaVersion).toBe("0.1");
+    expect(ir.metadata.source).toBe("atlas-gui");
+    expect(serializeAtlasIR(ir)).toContain('"schemaVersion": "0.1"');
+  });
+
+  it("roundtrips Atlas IR cards, queries, groups, objectives, constraints, and layout", () => {
+    const product = {
+      ...createAtlasCard("object", { id: "product-card", position: { x: 10, y: 20 } }),
+      tags: [{ id: "tag-type", key: "type", value: "product" }],
+      properties: [
+        { id: "prop-cost", name: "unit_cost", kind: "constant" as const, value: 12 }
+      ]
+    };
+    const query = createAtlasQuery({
+      id: "query-products",
+      includeTags: [{ id: "condition-type", key: "type", value: "product" }]
+    });
+    const objective = {
+      ...createAtlasCard("objective", { id: "objective-card" }),
+      objective: createObjectiveConfig({
+        direction: "minimize",
+        terms: [{ id: "term-cost", name: "Cost", functionCardId: "function-cost" }]
+      })
+    };
+    const constraint = {
+      ...createAtlasCard("constraint", { id: "constraint-card" }),
+      constraint: createConstraintConfig({
+        left: createFunctionConstraintExpression("function-cost"),
+        operator: "<=",
+        right: createConstantConstraintExpression(100)
+      })
+    };
+    const state = {
+      ...emptyAtlasState(),
+      cards: [product, objective, constraint],
+      queries: [query],
+      groups: [
+        {
+          id: "group-a",
+          title: "Factory A",
+          position: { x: 0, y: 0 },
+          size: { width: 400, height: 240 },
+          notes: "layout"
+        }
+      ]
+    };
+    const imported = importAtlasIR(JSON.parse(serializeAtlasIR(exportAtlasIR(state))));
+
+    expect(imported.diagnostics).toEqual([]);
+    expect(imported.state.cards.map((card) => card.id)).toEqual([
+      "product-card",
+      "objective-card",
+      "constraint-card"
+    ]);
+    expect(imported.state.cards[0]?.position).toEqual({ x: 10, y: 20 });
+    expect(imported.state.queries[0]?.id).toBe("query-products");
+    expect(imported.state.groups[0]?.title).toBe("Factory A");
+  });
+
+  it("roundtrips indexed property metadata through Atlas IR", () => {
+    const weeks = {
+      ...createAtlasCard("data", { id: "weeks" }),
+      title: "Weeks",
+      data: {
+        fileName: "Weeks.index",
+        columns: [],
+        rowCount: 0,
+        previewRows: [],
+        indexSet: createRangeIndexSet("Weeks", 1, 12)
+      }
+    };
+    const product = {
+      ...createAtlasCard("object", { id: "product-card" }),
+      properties: [
+        createAtlasProperty("production_quantity", "decision_ref", "decision-prod", {
+          id: "prop-quantity",
+          indexSetId: "weeks"
+        })
+      ]
+    };
+    const imported = importAtlasIR(
+      JSON.parse(serializeAtlasIR(exportAtlasIR({ ...emptyAtlasState(), cards: [weeks, product] })))
+    );
+
+    expect(imported.diagnostics).toEqual([]);
+    expect(imported.state.cards[0]?.data?.indexSet?.elements).toHaveLength(12);
+    expect(imported.state.cards[1]?.properties[0]?.indexSetId).toBe("weeks");
+  });
+
+  it("validates required Atlas IR fields", () => {
+    expect(validateAtlasIR({ schemaVersion: "0.1", cards: [{ type: "object" }], queries: [], groups: [] })).toEqual([
+      "Card at index 0 is missing required id."
+    ]);
+  });
+
+  it("roundtrips Atlas project JSON through the IR importer", () => {
+    const state = createProductionPlanningExample();
+    const parsed = importAtlasProject(JSON.parse(serializeAtlasProject(createAtlasProjectFile(state))));
+
+    expect(parsed.diagnostics).toEqual([]);
+    expect(parsed.state.cards).toHaveLength(state.cards.length);
+    expect(parsed.state.queries[0]?.id).toBe("query-products-factory-a");
+  });
+
+  it("provides a production planning example with objective, constraint, and decision refs", () => {
+    const example = createProductionPlanningExample();
+    const ir = exportAtlasIR(example, { exportedAt: "2026-01-01T00:00:00.000Z" });
+
+    expect(validateAtlasIR(ir)).toEqual([]);
+    expect(example.cards.filter((card) => card.type === "object")).toHaveLength(3);
+    expect(example.cards.some((card) => card.type === "objective")).toBe(true);
+    expect(example.cards.some((card) => card.type === "constraint")).toBe(true);
+    expect(
+      example.cards
+        .filter((card) => card.type === "object")
+        .every((card) =>
+          card.properties.some(
+            (property) => property.name === "production_quantity" && property.kind === "decision_ref"
+          )
+        )
+    ).toBe(true);
+  });
+
+  it("parses solve results and maps variables back to cards/properties", () => {
+    const example = createProductionPlanningExample();
+    const parsed = parseAtlasSolveResult({
+      status: "optimal",
+      objectiveValue: 120,
+      variableValues: { "decision-alpha": 5, "product-alpha.production_quantity": 5 },
+      constraints: {
+        "constraint-capacity": {
+          left: 40,
+          right: 40,
+          residual: 0,
+          satisfied: true
+        }
+      },
+      diagnostics: [],
+      code: "import cvxpy as cp"
+    });
+
+    expect(parsed.status).toBe("optimal");
+    expect(parsed.constraints?.["constraint-capacity"]?.satisfied).toBe(true);
+    expect(resolveSolutionVariableTarget("decision-alpha", example.cards)).toEqual({
+      cardId: "decision-alpha"
+    });
+    expect(resolveSolutionVariableTarget("product-alpha.production_quantity", example.cards)).toEqual({
+      cardId: "product-alpha",
+      propertyName: "production_quantity"
+    });
+  });
+
+  it("renders solution panel empty, loading, success, error, and stale states", () => {
+    const baseProps = {
+      statusMessage: "Ready",
+      updatedAt: "10:00",
+      backendStatus: "connected" as const,
+      backendDiagnostics: []
+    };
+    const success: AtlasSolutionState = {
+      status: "success",
+      stale: false,
+      result: {
+        status: "optimal",
+        objectiveValue: 120,
+        variableValues: { "decision-alpha": 5 },
+        constraints: {
+          "constraint-capacity": { left: 40, right: 40, residual: 0, satisfied: true }
+        },
+        diagnostics: [],
+        code: "import cvxpy as cp"
+      }
+    };
+
+    expect(renderToString(<AtlasSolutionPanel {...baseProps} solution={{ status: "empty" }} />)).toContain(
+      "No solve results yet."
+    );
+    expect(
+      renderToString(<AtlasSolutionPanel {...baseProps} solution={{ status: "loading" }} />)
+    ).toContain("Solving...");
+    expect(renderToString(<AtlasSolutionPanel {...baseProps} solution={success} />)).toContain(
+      "Objective value"
+    );
+    expect(
+      renderToString(
+        <AtlasSolutionPanel
+          {...baseProps}
+          solution={{ status: "error", message: "Backend down" }}
+        />
+      )
+    ).toContain("Backend down");
+    expect(
+      renderToString(
+        <AtlasSolutionPanel {...baseProps} solution={{ ...success, stale: true }} />
+      )
+    ).toContain("Solution is stale");
+  });
+
+  it("calls backend API client helpers with centralized base URLs", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      calls.push(String(input));
+      return {
+        ok: true,
+        json: async () => ({ status: "ok", diagnostics: [] })
+      } as Response;
+    }) as typeof fetch;
+
+    const ir = exportAtlasIR(emptyAtlasState(), { exportedAt: "2026-01-01T00:00:00.000Z" });
+    await checkAtlasBackendHealth("http://backend.test");
+    await validateAtlasModel(ir, "http://backend.test");
+    await evaluateAtlasModel(ir, "http://backend.test");
+    await generateAtlasCode(ir, "http://backend.test");
+    await solveAtlasModel(ir, "http://backend.test");
+
+    globalThis.fetch = originalFetch;
+    expect(calls).toEqual([
+      "http://backend.test/health",
+      "http://backend.test/validate",
+      "http://backend.test/evaluate",
+      "http://backend.test/generate_code",
+      "http://backend.test/solve"
+    ]);
+  });
+});
+
+describe("Atlas search and commands", () => {
+  it("searches cards by title, type, tags, and property names", () => {
+    const state = createProductionPlanningExample();
+
+    expect(searchAtlasCards(state.cards, "product").map((result) => result.card.id)).toEqual(
+      expect.arrayContaining(["product-alpha", "product-beta", "product-gamma"])
+    );
+    expect(searchAtlasCards(state.cards, "factory=A").map((result) => result.card.id)).toEqual([
+      "product-alpha",
+      "product-beta",
+      "product-gamma"
+    ]);
+    expect(searchAtlasCards(state.cards, "machine_hours_per_unit")).toHaveLength(3);
+    expect(searchAtlasCards(state.cards, "objective").some((result) => result.card.id === "objective-profit")).toBe(true);
+  });
+
+  it("registers and filters command palette actions", () => {
+    const commands = createAtlasCommands([getAtlasCardTemplate("product-like-object")!]);
+
+    expect(commands.map((command) => command.id)).toEqual(
+      expect.arrayContaining([
+        "create:object",
+        "create:decision",
+        "create:data",
+        "create:function",
+        "create:constraint",
+        "create:objective",
+        "template:product-like-object",
+        "loadExample",
+        "saveProject",
+        "export",
+        "evaluate",
+        "solve"
+      ])
+    );
+    expect(filterAtlasCommands(commands, "solve").map((command) => command.id)).toContain("solve");
+    expect(filterAtlasCommands(commands, "product").map((command) => command.id)).toContain(
+      "template:product-like-object"
+    );
   });
 });

@@ -38,9 +38,37 @@ export type AtlasProperty = {
   id: string;
   name: string;
   kind: AtlasPropertyKind;
-  value: string | number | boolean | null;
+  value: string | number | boolean | AtlasDataReference | null;
+  indexSetId?: string;
   unit?: string;
   notes?: string;
+};
+
+export type AtlasDecisionMetadata = {
+  variableType: "continuous" | "integer" | "binary";
+  shape: "scalar";
+  lowerBound?: number | null;
+  upperBound?: number | null;
+  initialValue?: number | null;
+};
+
+export type AtlasDataReference = {
+  dataCardId: string;
+  column: string;
+  rowIndex?: number;
+};
+
+export type AtlasCsvData = {
+  fileName: string;
+  columns: string[];
+  rowCount: number;
+  previewRows: Record<string, string>[];
+  indexSet?: AtlasIndexSet;
+};
+
+export type AtlasIndexSet = {
+  name: string;
+  elements: string[];
 };
 
 export const ATLAS_FUNCTION_KINDS = ["tagged_sum"] as const;
@@ -52,6 +80,10 @@ export type AtlasCard = {
   type: AtlasCardType;
   functionKind?: AtlasFunctionKind;
   taggedSum?: AtlasTaggedSumConfig;
+  objective?: AtlasObjectiveConfig;
+  constraint?: AtlasConstraintConfig;
+  decision?: AtlasDecisionMetadata;
+  data?: AtlasCsvData;
   title: string;
   position: AtlasPosition;
   tags: AtlasTag[];
@@ -94,6 +126,32 @@ export type AtlasTaggedSumConfig = {
   description?: string;
 };
 
+export type AtlasOptimizationDirection = "minimize" | "maximize";
+
+export type AtlasObjectiveTerm = {
+  id: string;
+  name: string;
+  functionCardId: string | null;
+};
+
+export type AtlasObjectiveConfig = {
+  direction: AtlasOptimizationDirection;
+  terms: AtlasObjectiveTerm[];
+};
+
+export type AtlasConstraintExpression =
+  | { kind: "constant"; value: number }
+  | { kind: "function_ref"; functionCardId: string | null };
+
+export type AtlasConstraintOperator = "<=" | ">=" | "=" | "==";
+
+export type AtlasConstraintConfig = {
+  name: string;
+  left: AtlasConstraintExpression;
+  operator: AtlasConstraintOperator;
+  right: AtlasConstraintExpression;
+};
+
 export type AtlasWorkbenchState = {
   cards: AtlasCard[];
   groups: AtlasGroup[];
@@ -107,6 +165,7 @@ export type AtlasAction =
   | { type: "card.create"; cardType: AtlasCardType }
   | { type: "card.createFromTemplate"; templateId: string }
   | { type: "card.select"; cardId: string | null }
+  | { type: "card.update"; cardId: string; patch: Partial<Pick<AtlasCard, "title" | "notes" | "decision" | "data">> }
   | { type: "card.move"; cardId: string; position: AtlasPosition }
   | { type: "card.delete"; cardId: string }
   | { type: "group.create" }
@@ -152,6 +211,7 @@ export type AtlasAction =
       name: string;
       kind: AtlasPropertyKind;
       value: AtlasProperty["value"];
+      indexSetId?: string;
       unit?: string;
       notes?: string;
     }
@@ -162,6 +222,7 @@ export type AtlasAction =
       name: string;
       kind: AtlasPropertyKind;
       value: AtlasProperty["value"];
+      indexSetId?: string;
       unit?: string;
       notes?: string;
     }
@@ -170,6 +231,20 @@ export type AtlasAction =
       type: "function.taggedSum.update";
       cardId: string;
       patch: Partial<AtlasTaggedSumConfig>;
+    }
+  | {
+      type: "objective.update";
+      cardId: string;
+      patch: Partial<Pick<AtlasObjectiveConfig, "direction">>;
+    }
+  | { type: "objective.term.add"; cardId: string; functionCardId?: string | null }
+  | { type: "objective.term.update"; cardId: string; termId: string; name: string; functionCardId: string | null }
+  | { type: "objective.term.remove"; cardId: string; termId: string }
+  | { type: "objective.term.move"; cardId: string; termId: string; direction: "up" | "down" }
+  | {
+      type: "constraint.update";
+      cardId: string;
+      patch: Partial<AtlasConstraintConfig>;
     }
   | { type: "workbench.clear" }
   | { type: "workbench.load"; state: AtlasWorkbenchState };

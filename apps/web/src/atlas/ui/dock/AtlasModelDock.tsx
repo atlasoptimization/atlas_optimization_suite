@@ -5,22 +5,40 @@ type AtlasModelDockProps = {
 };
 
 export function AtlasModelDock({ cards }: AtlasModelDockProps) {
-  const objectiveCount = cards.filter((card) => card.type === "objective").length;
-  const constraintCount = cards.filter((card) => card.type === "constraint").length;
+  const objectives = cards.filter((card) => card.type === "objective");
+  const constraints = cards.filter((card) => card.type === "constraint");
 
   return (
     <section className="atlas-model-dock" aria-label="Objectives and constraints dock">
       <div>
         <p className="atlas-eyebrow">Objectives</p>
-        <p className="atlas-muted">
-          {objectiveCount === 0 ? "No objective cards yet." : `${objectiveCount} objective cards`}
-        </p>
+        {objectives.length === 0 ? (
+          <p className="atlas-muted">No objective cards yet.</p>
+        ) : (
+          <ul className="atlas-dock-list">
+            {objectives.map((objective) => (
+              <li key={objective.id}>
+                <strong>{objective.title}</strong>
+                <span>{objective.objective?.direction ?? "minimize"}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <div>
         <p className="atlas-eyebrow">Constraints</p>
-        <p className="atlas-muted">
-          {constraintCount === 0 ? "No constraint cards yet." : `${constraintCount} constraint cards`}
-        </p>
+        {constraints.length === 0 ? (
+          <p className="atlas-muted">No constraint cards yet.</p>
+        ) : (
+          <ul className="atlas-dock-list">
+            {constraints.map((constraint) => (
+              <li key={constraint.id}>
+                <strong>{constraint.constraint?.name ?? constraint.title}</strong>
+                <span>{constraint.constraint?.operator ?? "<="}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <div className="atlas-dock-summary">
         <strong>Model assembly</strong>

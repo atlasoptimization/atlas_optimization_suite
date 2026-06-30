@@ -117,6 +117,7 @@ function normalizeAtomSpec(value: unknown) {
   return {
     name,
     importPath,
+    displayName: typeof value.displayName === "string" ? value.displayName : undefined,
     signature: typeof value.signature === "string" ? value.signature : "(*args)",
     argumentNames: Array.isArray(value.argumentNames)
       ? value.argumentNames.filter((item): item is string => typeof item === "string")
@@ -127,7 +128,8 @@ function normalizeAtomSpec(value: unknown) {
     doc: typeof value.doc === "string" ? value.doc : undefined,
     category: typeof value.category === "string" ? value.category : undefined,
     module: typeof value.module === "string" ? value.module : undefined,
-    callable: typeof value.callable === "boolean" ? value.callable : undefined
+    callable: typeof value.callable === "boolean" ? value.callable : undefined,
+    uiOverrides: isRecord(value.uiOverrides) ? JSON.parse(JSON.stringify(value.uiOverrides)) : undefined
   };
 }
 
@@ -144,6 +146,8 @@ function normalizeAtlasCard(value: unknown): AtlasCard | null {
     type: cardType,
     modelObjectId: typeof value.modelObjectId === "string" ? value.modelObjectId : undefined,
     modelObjectKind: isModelObjectKind(value.modelObjectKind) ? value.modelObjectKind : undefined,
+    modelObjectShape: value.modelObjectShape !== undefined ? copyJson(value.modelObjectShape) : undefined,
+    modelObjectValue: value.modelObjectValue !== undefined ? copyJson(value.modelObjectValue) : undefined,
     workspaceRole:
       value.workspaceRole === "definition" || value.workspaceRole === "reference"
         ? value.workspaceRole
@@ -547,4 +551,8 @@ function numberField(value: unknown, fallback = 0) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function copyJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
 }

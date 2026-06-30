@@ -191,6 +191,7 @@ class VariableObjectIR(ModelObjectBaseIR):
     """Canonical CVXPY variable object."""
 
     kind: Literal["variable"] = "variable"
+    shape: Any | None = None
     decision: DecisionIR | None = None
 
 
@@ -198,6 +199,7 @@ class ParameterObjectIR(ModelObjectBaseIR):
     """Canonical CVXPY parameter/input object."""
 
     kind: Literal["parameter"] = "parameter"
+    shape: Any | None = None
     data: dict[str, Any] | None = None
 
 

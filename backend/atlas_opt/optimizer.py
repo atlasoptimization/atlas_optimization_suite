@@ -77,9 +77,12 @@ class AtlasOptimizer:
             "status": result.status,
             "objectiveValue": result.objective_value,
             "variableValues": result.variable_values,
+            "variables": result.variables,
             "constraints": result.constraint_values,
             "diagnostics": serialize_diagnostics(result.diagnostics),
             "code": result.code,
+            "generatedCode": result.code,
+            "solverName": result.solver_name,
         }
 
 

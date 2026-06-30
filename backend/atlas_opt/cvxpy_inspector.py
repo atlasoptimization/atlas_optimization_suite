@@ -6,6 +6,7 @@ import importlib
 from dataclasses import dataclass, field
 from typing import Any
 
+from .cvxpy_registry import discover_cvxpy_atoms
 from .diagnostics import Diagnostic
 from .schema import (
     AtlasIR,
@@ -18,6 +19,12 @@ from .schema import (
 )
 
 _MISSING_INPUT = object()
+ATLAS_OPERATOR_PATHS = {
+    "atlas.expression.add",
+    "atlas.expression.subtract",
+    "atlas.expression.multiply",
+    "atlas.expression.matmul",
+}
 
 
 @dataclass
@@ -61,6 +68,9 @@ class CvxpyInspector:
         self.compiled: dict[str, CompiledObject] = {}
         self.objects = {model_object.id: model_object for model_object in ir.modelObjects.all_objects()}
         self.nodes = {node.id: node for node in ir.workspaceNodes}
+        self.allowed_atoms = discover_cvxpy_atoms()
+        self.allowed_import_paths = {atom.importPath for atom in self.allowed_atoms}
+        self.allowed_names = {atom.name for atom in self.allowed_atoms}
 
     def inspect(self) -> CvxpyInspectionResult:
         """Inspect all compilable objects and workspace references."""
@@ -98,13 +108,15 @@ class CvxpyInspector:
         """Dispatch compilation by Atlas model-object kind."""
 
         if model_object.kind == "variable":
-            variable = self.cp.Variable(name=model_object.name)
+            shape = cvxpy_shape(getattr(model_object, "shape", None))
+            variable = self.cp.Variable(shape=shape, name=model_object.name)
             decision = getattr(model_object, "decision", None)
             if decision is not None and decision.initialValue is not None:
                 variable.value = decision.initialValue
             return CompiledObject(variable)
         if model_object.kind == "parameter":
-            return CompiledObject(self.cp.Parameter(name=model_object.name))
+            shape = cvxpy_shape(getattr(model_object, "shape", None))
+            return CompiledObject(self.cp.Parameter(shape=shape, name=model_object.name))
         if model_object.kind == "constant":
             value = getattr(model_object, "value", None)
             if value is None:
@@ -112,7 +124,8 @@ class CvxpyInspector:
             if value is None:
                 self.add_diagnostic("warning", f'Constant "{model_object.name}" has no numeric value.', model_object.id)
                 return None
-            return CompiledObject(self.cp.Constant(value), value)
+            raw_value = value if isinstance(value, (int, float, str, bool)) or value is None else None
+            return CompiledObject(self.cp.Constant(cvxpy_constant_value(value)), raw_value)
         if model_object.kind in {"atom", "expression"}:
             return self.compile_atom(model_object)  # type: ignore[arg-type]
         if model_object.kind == "constraint":
@@ -131,9 +144,19 @@ class CvxpyInspector:
         if not inputs and not keyword_inputs:
             self.add_diagnostic("warning", f'Atom "{atom.name}" is incomplete: connect at least one input.', atom.id)
             return None
-        callable_value = resolve_cvxpy_callable(self.cp, atom_import_path(atom))
+        import_path = atom_import_path(atom)
+        callable_value = resolve_registered_cvxpy_callable(
+            self.cp,
+            import_path,
+            self.allowed_import_paths,
+            self.allowed_names,
+        )
         if callable_value is None:
-            self.add_diagnostic("error", f'Atom "{atom.name}" is not available in installed CVXPY.', atom.id)
+            self.add_diagnostic(
+                "error",
+                f'Atom "{atom.name}" importPath "{import_path}" is not registered for this backend.',
+                atom.id,
+            )
             return None
         args: list[Any] = []
         for _, source in sorted(inputs, key=lambda item: slot_sort_key(item[0])):
@@ -300,6 +323,8 @@ def metadata_from_cvxpy(value: Any) -> dict[str, Any]:
         metadata["is_dgp"] = safe_bool(value.is_dgp)
     if hasattr(value, "value"):
         metadata["value"] = jsonable_value(value.value)
+    if hasattr(value, "domain"):
+        metadata["domain"] = jsonable_domain(getattr(value, "domain"))
     if value.__class__.__name__.endswith("Problem"):
         metadata["is_dcp"] = safe_bool(value.is_dcp)
         metadata["is_dgp"] = safe_bool(value.is_dgp)
@@ -332,14 +357,24 @@ def atom_import_path(atom: AtomObjectIR) -> str:
     return atom.atomId or f"cvxpy.{atom.name}"
 
 
-def resolve_cvxpy_callable(cp: Any, import_path: str) -> Any | None:
-    """Resolve a CVXPY callable from an import path."""
+def resolve_registered_cvxpy_callable(
+    cp: Any,
+    import_path: str,
+    allowed_import_paths: set[str],
+    allowed_names: set[str],
+) -> Any | None:
+    """Resolve a CVXPY callable only when the path/name is registry-approved."""
 
-    if import_path.startswith("cvxpy."):
-        name = import_path.split(".")[-1]
+    if import_path in ATLAS_OPERATOR_PATHS:
+        return atlas_operator(import_path)
+    name = import_path.split(".")[-1]
+    if import_path not in allowed_import_paths and not (
+        import_path == f"cvxpy.{name}" and name in allowed_names
+    ):
+        return None
+    if import_path == f"cvxpy.{name}":
         value = getattr(cp, name, None)
-        if callable(value):
-            return value
+        return value if callable(value) else None
     module_name, _, attr_name = import_path.rpartition(".")
     if not module_name or not attr_name:
         return None
@@ -349,6 +384,20 @@ def resolve_cvxpy_callable(cp: Any, import_path: str) -> Any | None:
         return None
     value = getattr(module, attr_name, None)
     return value if callable(value) else None
+
+
+def atlas_operator(import_path: str):
+    """Return internal structural expression operators used where CVXPY has Python syntax."""
+
+    if import_path == "atlas.expression.add":
+        return lambda left, right: left + right
+    if import_path == "atlas.expression.subtract":
+        return lambda left, right: left - right
+    if import_path == "atlas.expression.multiply":
+        return lambda left, right: left * right
+    if import_path == "atlas.expression.matmul":
+        return lambda left, right: left @ right
+    return None
 
 
 def slot_sort_key(slot: str) -> tuple[int, str]:
@@ -377,6 +426,33 @@ def parse_numeric(value: object) -> float | int | None:
     return None
 
 
+def cvxpy_shape(value: Any) -> Any:
+    """Return a CVXPY shape from loose IR metadata."""
+
+    if isinstance(value, int) and value > 0:
+        return (value,)
+    if isinstance(value, list) and all(isinstance(item, int) and item > 0 for item in value):
+        return tuple(value)
+    if isinstance(value, dict):
+        raw = value.get("dimensions") or value.get("shape")
+        if isinstance(raw, list) and all(isinstance(item, int) and item > 0 for item in raw):
+            return tuple(raw)
+    return ()
+
+
+def cvxpy_constant_value(value: Any) -> Any:
+    """Return a CVXPY-safe constant value."""
+
+    if isinstance(value, list):
+        try:
+            import numpy as np
+
+            return np.array(value)
+        except ModuleNotFoundError:
+            return value
+    return value
+
+
 def safe_bool(method: Any) -> bool | None:
     """Call a CVXPY boolean method without leaking exceptions."""
 
@@ -396,3 +472,12 @@ def jsonable_value(value: Any) -> Any:
     if isinstance(value, (str, int, float, bool)):
         return value
     return str(value)
+
+
+def jsonable_domain(domain: Any) -> list[str]:
+    """Return compact CVXPY domain constraints when available."""
+
+    try:
+        return [str(item) for item in domain]
+    except Exception:
+        return []

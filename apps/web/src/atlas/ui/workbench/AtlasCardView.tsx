@@ -1,4 +1,4 @@
-import type { DragEvent, PointerEvent } from "react";
+import type { DragEvent, MouseEvent, PointerEvent } from "react";
 import type { AtlasCvxpyObjectMetadata } from "../../api/backendClient";
 import { constraintPreview } from "../../core/constraints";
 import { taggedSumPreview } from "../../core/functions";
@@ -26,6 +26,7 @@ type AtlasCardViewProps = {
   onMoveModule?: (cardId: string, moduleId: string, position: { x: number; y: number }) => void;
   onSelectDiagnostic?: (diagnostic: AtlasRuntimeDiagnostic) => void;
   onCreateConnection?: (source: AtlasConnectionEndpoint, target: AtlasConnectionEndpoint) => void;
+  onContextMenu?: (event: MouseEvent<HTMLElement>, card: AtlasCard) => void;
 };
 
 const TYPE_LABELS: Record<AtlasCardType, string> = {
@@ -53,7 +54,8 @@ export function AtlasCardView({
   onAttachModule,
   onMoveModule,
   onSelectDiagnostic,
-  onCreateConnection
+  onCreateConnection,
+  onContextMenu
 }: AtlasCardViewProps) {
   const functionPreview =
     card.type === "function" && card.functionKind === "tagged_sum"
@@ -79,6 +81,7 @@ export function AtlasCardView({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
+      onContextMenu={(event) => onContextMenu?.(event, card)}
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
         const kind = event.dataTransfer.getData("application/x-atlas-module-kind") as

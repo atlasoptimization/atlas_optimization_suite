@@ -3,11 +3,13 @@ import {
   checkAtlasBackendHealth,
   evaluateAtlasModel,
   fetchCvxpyAtoms,
+  generateAtlasCode,
   solveAtlasModel,
   validateAtlasModel,
   type AtlasCvxpyObjectMetadata
 } from "../api/backendClient";
 import { FALLBACK_ATOM_SPECS, type AtlasAtomSpec } from "../core/atoms";
+import { ATLAS_BUILTIN_EXAMPLES, loadAtlasBuiltinExample, type AtlasBuiltinExampleId } from "../core/builtinExamples";
 import { getSelectedAtlasCard } from "../core/cards";
 import { getConstraintDependencySummary } from "../core/constraints";
 import {
@@ -45,6 +47,19 @@ import {
 import type { AtlasAction, AtlasCardType, AtlasWorkbenchState } from "../core/types";
 import { ATLAS_CARD_TEMPLATES, getAtlasCardTemplate } from "../core/templates";
 import {
+  ATLAS_TUTORIAL_STEPS,
+  createTutorialSession,
+  executeTutorialAction,
+  markTutorialStepApplied,
+  nextTutorialSession,
+  pendingTutorialActions,
+  previousTutorialSession,
+  resetTutorialSession,
+  tutorialResetState,
+  tutorialStepsForExample,
+  type AtlasTutorialSession
+} from "../core/tutorial";
+import {
   loadAtlasWorkbenchState,
   saveAtlasWorkbenchState
 } from "../storage/localAtlasStorage";
@@ -57,12 +72,27 @@ import { AtlasSolutionPanel } from "./solution/AtlasSolutionPanel";
 import { AtlasSearchPalette } from "./search/AtlasSearchPalette";
 import { AtlasQueryBuilder } from "./query/AtlasQueryBuilder";
 import { AtlasPropertySelector } from "./query/AtlasPropertySelector";
+import { AtlasContextMenu, type AtlasContextMenuItem, type AtlasContextMenuState } from "./context/AtlasContextMenu";
+import { AtlasTutorialPanel } from "./tutorial/AtlasTutorialPanel";
+import { AtlasExamplesPanel } from "./examples/AtlasExamplesPanel";
+import {
+  AtlasCodeView,
+  AtlasDiagnosticsView,
+  AtlasIRView,
+  AtlasSolutionView,
+  AtlasViewTabs,
+  buildAtlasViewDiagnostics,
+  type AtlasGeneratedCodeState,
+  type AtlasWorkbenchView
+} from "./views/AtlasMultiView";
 import "./atlas.css";
 
 const PLACEHOLDER_ACTION_LABELS: Record<AtlasToolbarAction, string> = {
   evaluate: "Evaluate runs the backend when available and falls back locally.",
+  evaluateSolution: "Evaluate uses the latest solution values when available.",
   solve: "Solve sends the current Atlas IR to the backend.",
   inspect: "Inspect validates the current Atlas IR with the backend.",
+  generateCode: "Generate Code asks the backend for Python/CVXPY code.",
   export: "Exported Atlas IR JSON.",
   import: "Imported Atlas IR JSON.",
   saveProject: "Saved Atlas project JSON.",
@@ -71,7 +101,9 @@ const PLACEHOLDER_ACTION_LABELS: Record<AtlasToolbarAction, string> = {
   undo: "Undid the last Atlas workbench change.",
   redo: "Redid the last Atlas workbench change.",
   search: "Search is open.",
-  clear: "Cleared the Atlas workbench."
+  clear: "Cleared the Atlas workbench.",
+  tutorial: "Opened the Atlas tutorial.",
+  examples: "Opened Atlas examples."
 };
 
 type AtlasHistory = {
@@ -137,13 +169,32 @@ export function AtlasApp() {
   const [solution, setSolution] = useState<AtlasSolutionState>({ status: "empty" });
   const [runtimeDiagnostics, setRuntimeDiagnostics] = useState<AtlasRuntimeDiagnostic[]>([]);
   const [selectedRuntimeDiagnostic, setSelectedRuntimeDiagnostic] = useState<AtlasRuntimeDiagnostic | null>(null);
+  const [contextMenu, setContextMenu] = useState<AtlasContextMenuState | null>(null);
+  const [tutorial, setTutorial] = useState<AtlasTutorialSession>({ open: false, stepIndex: 0, appliedStepIds: [] });
+  const [tutorialSteps, setTutorialSteps] = useState(ATLAS_TUTORIAL_STEPS);
+  const [examplesOpen, setExamplesOpen] = useState(false);
+  const [activeView, setActiveView] = useState<AtlasWorkbenchView>("object");
+  const [generatedCode, setGeneratedCode] = useState<AtlasGeneratedCodeState>({ status: "empty" });
+  const [diagnosticsStale, setDiagnosticsStale] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const projectInputRef = useRef<HTMLInputElement | null>(null);
+  const tutorialAppliedRef = useRef(new Set<string>());
   const workbench = history.present;
   const previousWorkbenchRef = useRef(workbench);
   const selectedCard = getSelectedAtlasCard(workbench);
   const selectedGroup = getSelectedAtlasGroup(workbench);
   const selectedQuery = getSelectedAtlasQuery(workbench);
+  const currentIR = useMemo(() => exportAtlasIR(workbench), [workbench]);
+  const viewDiagnostics = useMemo(
+    () =>
+      buildAtlasViewDiagnostics({
+        ir: currentIR,
+        backendDiagnostics,
+        runtimeDiagnostics,
+        solution
+      }),
+    [backendDiagnostics, currentIR, runtimeDiagnostics, solution]
+  );
   const highlightedCardIds = useMemo(
     () => {
       if (selectedQuery) {
@@ -286,6 +337,14 @@ export function AtlasApp() {
     );
     setRuntimeDiagnostics(markSolveDiagnosticsStale);
     setCvxpyMetadata({});
+    setDiagnosticsStale(true);
+    setGeneratedCode((current) =>
+      current.status === "success"
+        ? { ...current, stale: true }
+        : current.status === "loading" || current.status === "error"
+          ? { ...current, stale: true }
+          : current
+    );
   }, [workbench]);
 
   useEffect(() => {
@@ -321,6 +380,28 @@ export function AtlasApp() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    if (!tutorial.open) return;
+    const step = tutorialSteps[tutorial.stepIndex];
+    if (!step) return;
+    if (tutorialAppliedRef.current.has(step.id)) return;
+    const actions = pendingTutorialActions(tutorial, tutorialSteps);
+    if (actions.length === 0) return;
+    tutorialAppliedRef.current.add(step.id);
+    for (const action of actions) {
+      const result = executeTutorialAction(workbench, action);
+      if (result.dispatch) dispatch(result.dispatch);
+      if (result.state !== workbench) dispatch({ type: "workbench.load", state: result.state });
+      if (result.diagnostic) setLastAction(result.diagnostic);
+      if (action.type === "message") setLastAction(action.text);
+      if (action.type === "validate") void handleToolbarAction("inspect");
+      if (action.type === "evaluate") void handleToolbarAction("evaluate");
+      if (action.type === "solve") void handleToolbarAction("solve");
+      if (action.type === "generateCode") void handleToolbarAction("generateCode");
+    }
+    setTutorial((current) => markTutorialStepApplied(current, step.id));
+  }, [tutorial, tutorialSteps, workbench]);
+
   function createCard(cardType: AtlasCardType) {
     dispatch({ type: "card.create", cardType });
     setLastAction(`Created ${cardType} card.`);
@@ -338,9 +419,15 @@ export function AtlasApp() {
   }
 
   async function handleToolbarAction(action: AtlasToolbarAction) {
-    if (action === "evaluate") {
-      const ir = exportAtlasIR(workbench);
-      const runtimeValues = evaluationMode === "solution" ? solutionRuntimeValues(solution) : {};
+    if (action === "evaluate" || action === "evaluateSolution") {
+      const ir = currentIR;
+      const mode = action === "evaluateSolution" ? "solution" : evaluationMode;
+      const runtimeValues = mode === "solution" ? solutionRuntimeValues(solution) : {};
+      if (mode === "solution" && Object.keys(runtimeValues).length === 0) {
+        setLastAction("No latest solution values are available for solution-based evaluation.");
+        return;
+      }
+      if (action === "evaluateSolution") setEvaluationMode("solution");
       try {
         const response = await evaluateAtlasModel(ir);
         setBackendStatus("connected");
@@ -348,7 +435,7 @@ export function AtlasApp() {
         const summary = summarizeBackendEvaluation(response);
         setBackendDiagnostics([...summary, ...diagnostics]);
         const report = evaluateAtlasWorkbench(workbench, {
-          mode: evaluationMode,
+          mode,
           runtimeValues
         });
         setEvaluationReport(report);
@@ -357,12 +444,12 @@ export function AtlasApp() {
         );
         setLastAction(
           diagnostics.length === 0
-            ? `Backend evaluation completed at ${evaluationMode} values.`
+            ? `Backend evaluation completed at ${mode} values.`
             : `Backend evaluation returned ${diagnostics.length} diagnostics.`
         );
       } catch (error) {
         const report = evaluateAtlasWorkbench(workbench, {
-          mode: evaluationMode,
+          mode,
           runtimeValues
         });
         setEvaluationReport(report);
@@ -383,7 +470,7 @@ export function AtlasApp() {
     }
 
     if (action === "solve") {
-      const ir = exportAtlasIR(workbench);
+      const ir = currentIR;
       setSolution((current) => ({
         status: "loading",
         previous: current.status === "success" ? current.result : "previous" in current ? current.previous : null,
@@ -396,6 +483,7 @@ export function AtlasApp() {
         const diagnostics = result.diagnostics.map((diagnostic) => diagnostic.message);
         setBackendDiagnostics(diagnostics);
         setSolution({ status: "success", result, stale: false });
+        if (result.code) setGeneratedCode({ status: "success", code: result.code, stale: false });
         setRuntimeDiagnostics((current) =>
           upsertRuntimeDiagnostics(current, diagnosticsFromSolveResult(result, workbench))
         );
@@ -420,13 +508,14 @@ export function AtlasApp() {
     }
 
     if (action === "inspect") {
-      const ir = exportAtlasIR(workbench);
+      const ir = currentIR;
       try {
         const response = await validateAtlasModel(ir);
         setBackendStatus("connected");
         const diagnostics = response.diagnostics?.map((diagnostic) => diagnostic.message) ?? [];
         setBackendDiagnostics(diagnostics);
         setCvxpyMetadata(response.metadata ?? {});
+        setDiagnosticsStale(false);
         setLastAction(
           diagnostics.length === 0
             ? "Backend validation passed."
@@ -436,13 +525,43 @@ export function AtlasApp() {
         setBackendStatus("unavailable");
         setCvxpyMetadata({});
         setBackendDiagnostics([error instanceof Error ? error.message : "Backend validation failed."]);
+        setDiagnosticsStale(false);
         setLastAction("Backend unavailable; local workbench remains usable.");
       }
       return;
     }
 
+    if (action === "generateCode") {
+      setGeneratedCode((current) => ({
+        status: "loading",
+        previous: current.status === "success" ? current.code : "previous" in current ? current.previous : null,
+        stale: current.status === "success" ? current.stale : "stale" in current ? current.stale : false
+      }));
+      try {
+        const response = await generateAtlasCode(currentIR);
+        setBackendStatus("connected");
+        const code = typeof response.code === "string" ? response.code : "";
+        const diagnostics = response.diagnostics?.map((diagnostic) => diagnostic.message) ?? [];
+        setBackendDiagnostics(diagnostics);
+        setGeneratedCode({ status: "success", code: code || "# Backend returned no code.", stale: false });
+        setLastAction(diagnostics.length === 0 ? "Generated CVXPY code." : `Generated code with ${diagnostics.length} diagnostics.`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Backend code generation failed.";
+        setBackendStatus("unavailable");
+        setBackendDiagnostics([message]);
+        setGeneratedCode((current) => ({
+          status: "error",
+          message,
+          previous: current.status === "success" ? current.code : "previous" in current ? current.previous : null,
+          stale: current.status === "success" ? current.stale : "stale" in current ? current.stale : false
+        }));
+        setLastAction("Backend unavailable; code was not generated.");
+      }
+      return;
+    }
+
     if (action === "export") {
-      downloadAtlasIR(exportAtlasIR(workbench));
+      downloadAtlasIR(currentIR);
       setLastAction(PLACEHOLDER_ACTION_LABELS.export);
       return;
     }
@@ -476,6 +595,20 @@ export function AtlasApp() {
       return;
     }
 
+    if (action === "tutorial") {
+      tutorialAppliedRef.current.clear();
+      setTutorialSteps(ATLAS_TUTORIAL_STEPS);
+      setTutorial(createTutorialSession());
+      setLastAction("Tutorial opened.");
+      return;
+    }
+
+    if (action === "examples") {
+      setExamplesOpen(true);
+      setLastAction("Opened built-in examples.");
+      return;
+    }
+
     if (action === "search") {
       setSearchOpen(true);
     } else if (action === "undo") {
@@ -489,6 +622,17 @@ export function AtlasApp() {
     setLastAction(PLACEHOLDER_ACTION_LABELS[action]);
   }
 
+  function selectAtlasSource(sourceId: string) {
+    const card = workbench.cards.find((candidate) => candidate.id === sourceId || candidate.modelObjectId === sourceId);
+    if (card) {
+      dispatch({ type: "card.select", cardId: card.id });
+      setActiveView("object");
+      setLastAction(`Selected ${card.title} from diagnostics.`);
+    } else {
+      setLastAction(`No workspace node found for ${sourceId}.`);
+    }
+  }
+
   function runPaletteCommand(commandId: AtlasCommandId) {
     if (commandId.startsWith("create:")) {
       createCard(commandId.slice("create:".length) as AtlasCardType);
@@ -499,6 +643,153 @@ export function AtlasApp() {
       return;
     }
     void handleToolbarAction(commandId as AtlasToolbarAction);
+  }
+
+  function contextMenuItems(menu: AtlasContextMenuState | null): AtlasContextMenuItem[] {
+    if (!menu) return [];
+    if (menu.kind === "canvas") {
+      return [
+        { id: "create-variable", label: "Create Variable" },
+        { id: "create-parameter", label: "Create Parameter" },
+        { id: "create-constant", label: "Create Constant" },
+        { id: "create-atom", label: "Create Atom" },
+        { id: "create-constraint", label: "Create Constraint" },
+        { id: "create-objective", label: "Create Objective" },
+        { id: "paste", label: "Paste", disabled: true },
+        { id: "reset-view", label: "Reset view / center view", disabled: true }
+      ];
+    }
+    if (menu.kind === "connection") {
+      return [
+        { id: "delete-connection", label: "Delete connection", destructive: true },
+        { id: "inspect-connection", label: "Inspect connection" },
+        { id: "highlight-connection", label: "Highlight source and target" }
+      ];
+    }
+    if (menu.kind === "explorer") {
+      return [
+        { id: "place-reference", label: "Place reference on workspace" },
+        { id: "rename-canonical", label: "Rename canonical object" },
+        { id: "delete-canonical", label: "Delete canonical object", destructive: true },
+        { id: "show-references", label: "Show all workspace references" },
+        { id: "validate-object", label: "Validate" },
+        { id: "evaluate-object", label: "Evaluate if applicable" }
+      ];
+    }
+    return [
+      { id: "rename", label: "Rename" },
+      { id: "duplicate-reference", label: "Duplicate visual reference" },
+      { id: "delete-reference", label: "Delete visual reference", destructive: true },
+      { id: "delete-canonical", label: "Delete canonical object", destructive: true },
+      { id: "open-inspector", label: "Open in Inspector" },
+      { id: "show-dependencies", label: "Show dependencies" },
+      { id: "show-references", label: "Show all references to same canonical object" },
+      { id: "copy-reference", label: "Create reference / copy reference" },
+      { id: "validate-object", label: "Validate selected object" },
+      { id: "evaluate-object", label: "Evaluate selected object" },
+      { id: "generate-selected-code", label: "Generate code for selected object", disabled: true },
+      { id: "fit-dependencies", label: "Fit view to dependencies", disabled: true }
+    ];
+  }
+
+  function handleContextMenuAction(itemId: string) {
+    const menu = contextMenu;
+    if (!menu) return;
+    setContextMenu(null);
+    if (menu.kind === "canvas") {
+      const position = menu.position;
+      if (itemId === "create-variable") dispatch({ type: "modelObject.define", objectKind: "variable", name: "x", position });
+      if (itemId === "create-parameter") dispatch({ type: "modelObject.define", objectKind: "parameter", name: "p", position });
+      if (itemId === "create-constant") dispatch({ type: "modelObject.define", objectKind: "constant", name: "c", position });
+      if (itemId === "create-constraint") dispatch({ type: "modelObject.define", objectKind: "constraint", name: "constraint", position });
+      if (itemId === "create-objective") dispatch({ type: "modelObject.define", objectKind: "objective", name: "objective", position });
+      if (itemId === "create-atom") {
+        const atomSpec = atomSpecs[0];
+        if (atomSpec) {
+          dispatch({
+            type: "modelObject.define",
+            objectKind: "atom",
+            name: atomSpec.displayName ?? atomSpec.name,
+            atomSpec,
+            position
+          });
+        }
+      }
+      setLastAction(`Context menu action: ${itemId}.`);
+      return;
+    }
+    if (menu.kind === "connection") {
+      const connection = workbench.connections.find((candidate) => candidate.id === menu.connectionId);
+      if (itemId === "delete-connection") {
+        dispatch({ type: "connection.delete", connectionId: menu.connectionId });
+        setLastAction("Deleted connection.");
+      } else if (itemId === "highlight-connection" && connection?.source.nodeId) {
+        dispatch({ type: "card.select", cardId: connection.source.nodeId });
+        setLastAction("Selected connection source. Target remains connected visually.");
+      } else {
+        setLastAction(connection ? `Connection ${connection.id}: ${connection.source.port ?? "out"} -> ${connection.target.slot ?? "in"}.` : "Connection not found.");
+      }
+      return;
+    }
+    const modelObjectId = menu.kind === "explorer"
+      ? menu.modelObjectId
+      : workbench.cards.find((card) => card.id === menu.cardId)?.modelObjectId ?? menu.cardId;
+    const referenceCard = workbench.cards.find((card) => (card.modelObjectId ?? card.id) === modelObjectId);
+    if (itemId === "place-reference" || itemId === "copy-reference" || itemId === "duplicate-reference") {
+      if (menu.kind === "node") {
+        dispatch({ type: "workspaceReference.duplicate", cardId: menu.cardId, position: { x: 920, y: 720 } });
+      } else {
+        dispatch({ type: "workspaceReference.create", modelObjectId, position: { x: 920, y: 720 } });
+      }
+      setLastAction("Placed workspace reference.");
+      return;
+    }
+    if (itemId === "delete-reference" && menu.kind === "node") {
+      dispatch({ type: "card.delete", cardId: menu.cardId });
+      setLastAction("Deleted visual reference. Canonical object remains in Explorer.");
+      return;
+    }
+    if (itemId === "delete-canonical") {
+      if (window.confirm(`Delete canonical object ${modelObjectId} and all its workspace references?`)) {
+        dispatch({ type: "modelObject.delete", modelObjectId });
+        setLastAction("Deleted canonical object and its references.");
+      }
+      return;
+    }
+    if (itemId === "rename" || itemId === "rename-canonical") {
+      const nextTitle = window.prompt("Rename canonical object", referenceCard?.title ?? modelObjectId);
+      if (nextTitle) {
+        dispatch({ type: "modelObject.rename", modelObjectId, title: nextTitle });
+        setLastAction(`Renamed ${modelObjectId}.`);
+      }
+      return;
+    }
+    if (itemId === "open-inspector" && menu.kind === "node") {
+      dispatch({ type: "card.select", cardId: menu.cardId });
+      setLastAction("Opened object in Inspector.");
+      return;
+    }
+    if (itemId === "show-dependencies") {
+      setDependencyHighlightEnabled(true);
+      if (referenceCard) dispatch({ type: "card.select", cardId: referenceCard.id });
+      setLastAction("Dependency highlighting enabled for selected object.");
+      return;
+    }
+    if (itemId === "show-references") {
+      const count = workbench.cards.filter((card) => (card.modelObjectId ?? card.id) === modelObjectId).length;
+      if (referenceCard) dispatch({ type: "card.select", cardId: referenceCard.id });
+      setLastAction(`${count} workspace reference(s) point to ${modelObjectId}.`);
+      return;
+    }
+    if (itemId === "validate-object") {
+      if (referenceCard) dispatch({ type: "card.select", cardId: referenceCard.id });
+      void handleToolbarAction("inspect");
+      return;
+    }
+    if (itemId === "evaluate-object") {
+      if (referenceCard) dispatch({ type: "card.select", cardId: referenceCard.id });
+      void handleToolbarAction("evaluate");
+    }
   }
 
   return (
@@ -525,6 +816,8 @@ export function AtlasApp() {
                 return;
               }
               dispatch({ type: "workbench.load", state: result.state });
+              setGeneratedCode({ status: "empty" });
+              setDiagnosticsStale(true);
               setLastAction("Imported Atlas IR JSON.");
             })
             .catch((error) => {
@@ -553,6 +846,8 @@ export function AtlasApp() {
               }
               dispatch({ type: "workbench.load", state: result.state });
               setEvaluationReport(null);
+              setGeneratedCode({ status: "empty" });
+              setDiagnosticsStale(true);
               setLastAction("Loaded Atlas project JSON.");
             })
             .catch((error) => {
@@ -581,59 +876,114 @@ export function AtlasApp() {
             dispatch({ type: "workspaceReference.create", modelObjectId });
             setLastAction(`Placed reference to ${modelObjectId}.`);
           }}
+          onExplorerContextMenu={(event, modelObjectId) => {
+            setContextMenu({ kind: "explorer", x: event.clientX, y: event.clientY, modelObjectId });
+          }}
         />
 
         <section className="atlas-workbench-column">
-          <AtlasWorkbench
-            cards={workbench.cards}
-            groups={workbench.groups}
-            queries={workbench.queries}
-            connections={workbench.connections}
-            highlightedCardIds={highlightedCardIds}
-            dependencyPropertyNamesByCardId={dependencyPropertyNamesByCardId}
-            diagnosticsByCardId={diagnosticsByCardId}
-            metadataByCardId={cvxpyMetadata}
-            selectedCardId={workbench.selectedCardId}
-            selectedGroupId={workbench.selectedGroupId}
-            onSelectCard={(cardId) => {
-              dispatch({ type: "card.select", cardId });
-              setFocusedObjectiveTermId(null);
-            }}
-            onSelectGroup={(groupId) => dispatch({ type: "group.select", groupId })}
-            onMoveCard={(cardId, position) => dispatch({ type: "card.move", cardId, position })}
-            onCreateWorkspaceReference={(modelObjectId, position) => {
-              dispatch({ type: "workspaceReference.create", modelObjectId, position });
-              setLastAction(`Placed reference to ${modelObjectId}.`);
-            }}
-            onCreateAtomFromSpec={(atomSpec, position) => {
-              dispatch({
-                type: "modelObject.define",
-                objectKind: "atom",
-                name: atomSpec.name,
-                shape: "scalar",
-                atomSpec,
-                position
-              });
-              setLastAction(`Defined CVXPY atom ${atomSpec.name}.`);
-            }}
-            onCreateConnection={(source, target) => {
-              dispatch({ type: "connection.create", source, target });
-              setLastAction(`Connected ${source.port ?? "output"} to ${target.slot ?? "input"}.`);
-            }}
-            onAttachModule={(cardId, kind, position) => {
-              dispatch({ type: "module.attach", cardId, kind, position });
-              setLastAction(`Attached ${kind} module.`);
-            }}
-            onMoveModule={(cardId, moduleId, position) => {
-              dispatch({ type: "module.update", cardId, moduleId, patch: { position } });
-            }}
-            onSelectDiagnostic={(diagnostic) => {
-              setSelectedRuntimeDiagnostic(diagnostic);
-              dispatch({ type: "card.select", cardId: diagnostic.cardId });
-              setLastAction(`Selected diagnostic ${diagnostic.label}.`);
-            }}
-          />
-          <AtlasModelDock cards={workbench.cards} />
+          <AtlasViewTabs activeView={activeView} onChange={setActiveView} />
+          <div className="atlas-view-content">
+            {activeView === "object" && (
+              <>
+                <AtlasWorkbench
+                  cards={workbench.cards}
+                  groups={workbench.groups}
+                  queries={workbench.queries}
+                  connections={workbench.connections}
+                  highlightedCardIds={highlightedCardIds}
+                  dependencyPropertyNamesByCardId={dependencyPropertyNamesByCardId}
+                  diagnosticsByCardId={diagnosticsByCardId}
+                  metadataByCardId={cvxpyMetadata}
+                  selectedCardId={workbench.selectedCardId}
+                  selectedGroupId={workbench.selectedGroupId}
+                  onSelectCard={(cardId) => {
+                    dispatch({ type: "card.select", cardId });
+                    setFocusedObjectiveTermId(null);
+                  }}
+                  onSelectGroup={(groupId) => dispatch({ type: "group.select", groupId })}
+                  onMoveCard={(cardId, position) => dispatch({ type: "card.move", cardId, position })}
+                  onCreateWorkspaceReference={(modelObjectId, position) => {
+                    dispatch({ type: "workspaceReference.create", modelObjectId, position });
+                    setLastAction(`Placed reference to ${modelObjectId}.`);
+                  }}
+                  onCreateAtomFromSpec={(atomSpec, position) => {
+                    dispatch({
+                      type: "modelObject.define",
+                      objectKind: "atom",
+                      name: atomSpec.displayName ?? atomSpec.name,
+                      shape: "scalar",
+                      atomSpec,
+                      position
+                    });
+                    setLastAction(`Defined CVXPY atom ${atomSpec.displayName ?? atomSpec.name}.`);
+                  }}
+                  onCreateConnection={(source, target) => {
+                    dispatch({ type: "connection.create", source, target });
+                    setLastAction(`Connected ${source.port ?? "output"} to ${target.slot ?? "input"}.`);
+                  }}
+                  onAttachModule={(cardId, kind, position) => {
+                    dispatch({ type: "module.attach", cardId, kind, position });
+                    setLastAction(`Attached ${kind} module.`);
+                  }}
+                  onMoveModule={(cardId, moduleId, position) => {
+                    dispatch({ type: "module.update", cardId, moduleId, patch: { position } });
+                  }}
+                  onSelectDiagnostic={(diagnostic) => {
+                    setSelectedRuntimeDiagnostic(diagnostic);
+                    dispatch({ type: "card.select", cardId: diagnostic.cardId });
+                    setLastAction(`Selected diagnostic ${diagnostic.label}.`);
+                  }}
+                  onNodeContextMenu={(event, card) => {
+                    setContextMenu({ kind: "node", x: event.clientX, y: event.clientY, cardId: card.id });
+                  }}
+                  onCanvasContextMenu={(event, position) => {
+                    setContextMenu({ kind: "canvas", x: event.clientX, y: event.clientY, position });
+                  }}
+                  onConnectionContextMenu={(event, connection) => {
+                    setContextMenu({ kind: "connection", x: event.clientX, y: event.clientY, connectionId: connection.id });
+                  }}
+                />
+                <AtlasModelDock cards={workbench.cards} />
+              </>
+            )}
+            {activeView === "ir" && (
+              <AtlasIRView ir={currentIR} onExport={() => void handleToolbarAction("export")} onImport={() => void handleToolbarAction("import")} />
+            )}
+            {activeView === "code" && (
+              <AtlasCodeView
+                codeState={generatedCode}
+                solution={solution}
+                backendStatus={backendStatus}
+                onGenerateCode={() => void handleToolbarAction("generateCode")}
+              />
+            )}
+            {activeView === "solution" && (
+              <AtlasSolutionView
+                solution={solution}
+                onSolve={() => void handleToolbarAction("solve")}
+                onSelectVariable={(variableId) => {
+                  const target = resolveSolutionVariableTarget(variableId, workbench.cards);
+                  if (target.cardId) {
+                    dispatch({ type: "card.select", cardId: target.cardId });
+                    setActiveView("object");
+                    setLastAction(`Selected ${target.cardId} from solution.`);
+                  } else {
+                    setLastAction(`No card mapping found for ${variableId}.`);
+                  }
+                }}
+                onSelectConstraint={selectAtlasSource}
+              />
+            )}
+            {activeView === "diagnostics" && (
+              <AtlasDiagnosticsView
+                diagnostics={viewDiagnostics}
+                stale={diagnosticsStale}
+                onValidate={() => void handleToolbarAction("inspect")}
+                onSelectSource={selectAtlasSource}
+              />
+            )}
+          </div>
         </section>
 
         <aside className="atlas-side-panel" aria-label="Inspector and solution panel">
@@ -855,6 +1205,44 @@ export function AtlasApp() {
           onRunCommand={runPaletteCommand}
         />
       )}
+      <AtlasContextMenu
+        menu={contextMenu}
+        items={contextMenuItems(contextMenu)}
+        onSelect={handleContextMenuAction}
+        onClose={() => setContextMenu(null)}
+      />
+      <AtlasTutorialPanel
+        open={tutorial.open}
+        step={tutorialSteps[tutorial.stepIndex] ?? null}
+        stepIndex={tutorial.stepIndex}
+        stepCount={tutorialSteps.length}
+        onNext={() => setTutorial((current) => nextTutorialSession(current, tutorialSteps))}
+        onBack={() => setTutorial((current) => previousTutorialSession(current))}
+        onReset={() => {
+          dispatch({ type: "workbench.load", state: tutorialResetState(workbench) });
+          tutorialAppliedRef.current.clear();
+          setTutorial(resetTutorialSession());
+          setLastAction("Tutorial reset.");
+        }}
+        onExit={() => setTutorial((current) => ({ ...current, open: false }))}
+      />
+      <AtlasExamplesPanel
+        open={examplesOpen}
+        examples={ATLAS_BUILTIN_EXAMPLES}
+        onLoad={(exampleId) => {
+          dispatch({ type: "workbench.load", state: loadAtlasBuiltinExample(exampleId) });
+          setExamplesOpen(false);
+          setLastAction(`Loaded ${exampleId} example.`);
+        }}
+        onTutorial={(exampleId: AtlasBuiltinExampleId) => {
+          tutorialAppliedRef.current.clear();
+          setTutorialSteps(tutorialStepsForExample(exampleId));
+          setTutorial(createTutorialSession());
+          setExamplesOpen(false);
+          setLastAction(`Started ${exampleId} guided tutorial.`);
+        }}
+        onClose={() => setExamplesOpen(false)}
+      />
     </div>
   );
 }

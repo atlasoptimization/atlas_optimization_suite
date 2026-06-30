@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { filterAtomSpecs, type AtlasAtomSpec } from "../../core/atoms";
 import { getCanonicalModelObjects } from "../../core/cards";
 import type { AtlasCard, AtlasCardModuleKind, AtlasCardType } from "../../core/types";
@@ -29,6 +29,7 @@ type AtlasConstructorPanelProps = {
     atomSpec?: AtlasAtomSpec
   ) => void;
   onCreateWorkspaceReference: (modelObjectId: string) => void;
+  onExplorerContextMenu?: (event: MouseEvent<HTMLElement>, modelObjectId: string) => void;
 };
 
 export function AtlasConstructorPanel({
@@ -40,7 +41,8 @@ export function AtlasConstructorPanel({
   onCreateFromTemplate,
   onCreateGroup,
   onDefineModelObject,
-  onCreateWorkspaceReference
+  onCreateWorkspaceReference,
+  onExplorerContextMenu
 }: AtlasConstructorPanelProps) {
   const [variableName, setVariableName] = useState("x");
   const [parameterName, setParameterName] = useState("p");
@@ -156,13 +158,13 @@ export function AtlasConstructorPanel({
                     key={atomSpec.importPath}
                     type="button"
                     draggable
-                    onClick={() => onDefineModelObject("atom", atomSpec.name, "scalar", atomSpec)}
+                    onClick={() => onDefineModelObject("atom", atomSpec.displayName ?? atomSpec.name, "scalar", atomSpec)}
                     onDragStart={(event) => {
                       event.dataTransfer.setData("application/x-atlas-atom-spec", JSON.stringify(atomSpec));
                       event.dataTransfer.effectAllowed = "copy";
                     }}
                   >
-                    <strong>{atomSpec.name}</strong>
+                    <strong>{atomSpec.displayName ?? atomSpec.name}</strong>
                     <span>{atomSpec.signature}</span>
                   </button>
                 ))}
@@ -177,13 +179,13 @@ export function AtlasConstructorPanel({
           <p className="atlas-eyebrow">Explorer</p>
           <h2>Model definitions</h2>
         </header>
-        <ExplorerSection title="Variables" objects={canonicalObjects.filter((card) => card.modelObjectKind === "variable")} onCreateWorkspaceReference={onCreateWorkspaceReference} />
-        <ExplorerSection title="Parameters" objects={canonicalObjects.filter((card) => card.modelObjectKind === "parameter")} onCreateWorkspaceReference={onCreateWorkspaceReference} />
-        <ExplorerSection title="Constants" objects={canonicalObjects.filter((card) => card.modelObjectKind === "constant")} onCreateWorkspaceReference={onCreateWorkspaceReference} />
-        <ExplorerSection title="Expressions / Atoms" objects={canonicalObjects.filter((card) => card.modelObjectKind === "atom" || card.modelObjectKind === "expression")} onCreateWorkspaceReference={onCreateWorkspaceReference} />
-        <ExplorerSection title="Constraints" objects={canonicalObjects.filter((card) => card.modelObjectKind === "constraint")} onCreateWorkspaceReference={onCreateWorkspaceReference} />
-        <ExplorerSection title="Objectives" objects={canonicalObjects.filter((card) => card.modelObjectKind === "objective")} onCreateWorkspaceReference={onCreateWorkspaceReference} />
-        <ExplorerSection title="Problems" objects={canonicalObjects.filter((card) => card.modelObjectKind === "problem")} onCreateWorkspaceReference={onCreateWorkspaceReference} />
+        <ExplorerSection title="Variables" objects={canonicalObjects.filter((card) => card.modelObjectKind === "variable")} onCreateWorkspaceReference={onCreateWorkspaceReference} onExplorerContextMenu={onExplorerContextMenu} />
+        <ExplorerSection title="Parameters" objects={canonicalObjects.filter((card) => card.modelObjectKind === "parameter")} onCreateWorkspaceReference={onCreateWorkspaceReference} onExplorerContextMenu={onExplorerContextMenu} />
+        <ExplorerSection title="Constants" objects={canonicalObjects.filter((card) => card.modelObjectKind === "constant")} onCreateWorkspaceReference={onCreateWorkspaceReference} onExplorerContextMenu={onExplorerContextMenu} />
+        <ExplorerSection title="Expressions / Atoms" objects={canonicalObjects.filter((card) => card.modelObjectKind === "atom" || card.modelObjectKind === "expression")} onCreateWorkspaceReference={onCreateWorkspaceReference} onExplorerContextMenu={onExplorerContextMenu} />
+        <ExplorerSection title="Constraints" objects={canonicalObjects.filter((card) => card.modelObjectKind === "constraint")} onCreateWorkspaceReference={onCreateWorkspaceReference} onExplorerContextMenu={onExplorerContextMenu} />
+        <ExplorerSection title="Objectives" objects={canonicalObjects.filter((card) => card.modelObjectKind === "objective")} onCreateWorkspaceReference={onCreateWorkspaceReference} onExplorerContextMenu={onExplorerContextMenu} />
+        <ExplorerSection title="Problems" objects={canonicalObjects.filter((card) => card.modelObjectKind === "problem")} onCreateWorkspaceReference={onCreateWorkspaceReference} onExplorerContextMenu={onExplorerContextMenu} />
       </section>
 
       <section className="atlas-constructor-section" aria-label="Workbench layout">
@@ -242,11 +244,13 @@ function groupAtoms(atoms: AtlasAtomSpec[]) {
 function ExplorerSection({
   title,
   objects,
-  onCreateWorkspaceReference
+  onCreateWorkspaceReference,
+  onExplorerContextMenu
 }: {
   title: string;
   objects: AtlasCard[];
   onCreateWorkspaceReference: (modelObjectId: string) => void;
+  onExplorerContextMenu?: (event: MouseEvent<HTMLElement>, modelObjectId: string) => void;
 }) {
   return (
     <section className="atlas-constructor-section atlas-explorer-section" aria-label={`${title} explorer`}>
@@ -265,6 +269,11 @@ function ExplorerSection({
                   event.dataTransfer.effectAllowed = "copy";
                 }}
                 onClick={() => onCreateWorkspaceReference(object.modelObjectId ?? object.id)}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onExplorerContextMenu?.(event, object.modelObjectId ?? object.id);
+                }}
               >
                 <strong>{object.title}</strong>
                 <span>{object.modelObjectId ?? object.id}</span>

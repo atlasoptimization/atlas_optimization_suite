@@ -169,6 +169,52 @@ export function createAtlasWorkspaceReference(
   };
 }
 
+export function duplicateAtlasWorkspaceReference(
+  state: AtlasWorkbenchState,
+  cardId: string,
+  position?: AtlasPosition
+): AtlasWorkbenchState {
+  const card = state.cards.find((candidate) => candidate.id === cardId);
+  const modelObjectId = card?.modelObjectId ?? card?.id;
+  return modelObjectId ? createAtlasWorkspaceReference(state, modelObjectId, position) : state;
+}
+
+export function deleteAtlasCanonicalObject(
+  state: AtlasWorkbenchState,
+  modelObjectId: string
+): AtlasWorkbenchState {
+  const remainingCards = state.cards.filter((card) => (card.modelObjectId ?? card.id) !== modelObjectId);
+  const remainingCardIds = new Set(remainingCards.map((card) => card.id));
+  return {
+    ...state,
+    cards: remainingCards,
+    connections: state.connections.filter(
+      (connection) =>
+        (!connection.source.objectId || connection.source.objectId !== modelObjectId) &&
+        (!connection.target.objectId || connection.target.objectId !== modelObjectId) &&
+        (!connection.source.nodeId || remainingCardIds.has(connection.source.nodeId)) &&
+        (!connection.target.nodeId || remainingCardIds.has(connection.target.nodeId))
+    ),
+    selectedCardId:
+      state.selectedCardId && remainingCardIds.has(state.selectedCardId) ? state.selectedCardId : null
+  };
+}
+
+export function renameAtlasCanonicalObject(
+  state: AtlasWorkbenchState,
+  modelObjectId: string,
+  title: string
+): AtlasWorkbenchState {
+  const trimmed = title.trim();
+  if (!trimmed) return state;
+  return {
+    ...state,
+    cards: state.cards.map((card) =>
+      (card.modelObjectId ?? card.id) === modelObjectId ? { ...card, title: trimmed } : card
+    )
+  };
+}
+
 export function updateAtlasAtomInput(
   state: AtlasWorkbenchState,
   cardId: string,
@@ -520,12 +566,13 @@ function createAtomConfig(atomSpec: AtlasCard["atomSpec"], fallbackName: string)
   return {
     atomName,
     importPath: atomSpec?.importPath ?? `cvxpy.${atomName}`,
-    displayName: atomSpec?.name ?? fallbackName,
+    displayName: atomSpec?.displayName ?? atomSpec?.name ?? fallbackName,
     signature: atomSpec?.signature ?? "(*args)",
     positionalInputs,
     keywordInputs,
     outputName: "expression",
-    metadata: atomSpec ? JSON.parse(JSON.stringify(atomSpec)) : undefined
+    metadata: atomSpec ? JSON.parse(JSON.stringify(atomSpec)) : undefined,
+    uiOverrides: atomSpec?.uiOverrides ? JSON.parse(JSON.stringify(atomSpec.uiOverrides)) : undefined
   };
 }
 

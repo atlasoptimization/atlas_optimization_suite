@@ -8,6 +8,7 @@ type AtlasAtomNodeProps = {
 
 export function AtlasAtomNode({ atomConfig, metadata }: AtlasAtomNodeProps) {
   const keywordInputs = Object.values(atomConfig.keywordInputs);
+  const hint = atomConfig.uiOverrides?.description ?? atomConfig.metadata?.description;
   return (
     <section className="atlas-atom-node" aria-label={`${atomConfig.displayName} atom node`}>
       <header>
@@ -32,6 +33,7 @@ export function AtlasAtomNode({ atomConfig, metadata }: AtlasAtomNodeProps) {
           <em>{atomConfig.outputName ?? "expression"}</em>
         </div>
       </div>
+      {typeof hint === "string" && <em>{hint}</em>}
       {metadata && (
         <div className="atlas-atom-node-metadata">
           {metadata.shape !== undefined && <span>{formatShape(metadata.shape)}</span>}

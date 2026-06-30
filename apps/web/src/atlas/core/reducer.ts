@@ -6,10 +6,13 @@ import {
   addAtlasTag,
   createAtlasWorkspaceReference,
   defineAtlasModelObject,
+  deleteAtlasCanonicalObject,
   deleteAtlasCard,
   deleteAtlasProperty,
   deleteAtlasTag,
   moveAtlasCard,
+  duplicateAtlasWorkspaceReference,
+  renameAtlasCanonicalObject,
   updateAtlasAtomInput,
   updateAtlasCardDetails,
   updateAtlasProperty,
@@ -51,6 +54,12 @@ export function atlasReducer(
       return defineAtlasModelObject(state, action.objectKind, action.name, action.shape, action.atomSpec, action.position);
     case "workspaceReference.create":
       return createAtlasWorkspaceReference(state, action.modelObjectId, action.position);
+    case "workspaceReference.duplicate":
+      return duplicateAtlasWorkspaceReference(state, action.cardId, action.position);
+    case "modelObject.delete":
+      return deleteAtlasCanonicalObject(state, action.modelObjectId);
+    case "modelObject.rename":
+      return renameAtlasCanonicalObject(state, action.modelObjectId, action.title);
     case "connection.create":
       return addAtlasConnection(state, action.source, action.target, action.semanticKind);
     case "connection.delete":

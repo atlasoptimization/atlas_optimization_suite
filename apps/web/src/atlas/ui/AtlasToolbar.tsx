@@ -1,7 +1,9 @@
 export type AtlasToolbarAction =
   | "evaluate"
+  | "evaluateSolution"
   | "solve"
   | "inspect"
+  | "generateCode"
   | "export"
   | "import"
   | "saveProject"
@@ -10,7 +12,9 @@ export type AtlasToolbarAction =
   | "undo"
   | "redo"
   | "search"
-  | "clear";
+  | "clear"
+  | "tutorial"
+  | "examples";
 
 type AtlasToolbarProps = {
   onAction: (action: AtlasToolbarAction) => void;
@@ -20,9 +24,12 @@ type AtlasToolbarProps = {
 
 const primaryActions: Array<{ id: AtlasToolbarAction; label: string }> = [
   { id: "inspect", label: "Validate" },
-  { id: "evaluate", label: "Evaluate" },
+  { id: "evaluate", label: "Evaluate current" },
+  { id: "evaluateSolution", label: "Evaluate solution" },
+  { id: "generateCode", label: "Generate Code" },
   { id: "solve", label: "Solve" },
   { id: "export", label: "Export" },
+  { id: "import", label: "Import" },
   { id: "saveProject", label: "Save" },
   { id: "loadProject", label: "Load" },
   { id: "search", label: "Search" }
@@ -31,6 +38,11 @@ const primaryActions: Array<{ id: AtlasToolbarAction; label: string }> = [
 const historyActions: Array<{ id: AtlasToolbarAction; label: string }> = [
   { id: "undo", label: "Undo" },
   { id: "redo", label: "Redo" }
+];
+
+const helpActions: Array<{ id: AtlasToolbarAction; label: string }> = [
+  { id: "tutorial", label: "Tutorial" },
+  { id: "examples", label: "Examples" }
 ];
 
 export function AtlasToolbar({
@@ -61,6 +73,14 @@ export function AtlasToolbar({
             onClick={() => onAction(action.id)}
             disabled={(action.id === "undo" && !canUndo) || (action.id === "redo" && !canRedo)}
           >
+            {action.label}
+          </button>
+        ))}
+      </nav>
+
+      <nav aria-label="Atlas help actions" className="atlas-toolbar-actions atlas-toolbar-secondary">
+        {helpActions.map((action) => (
+          <button key={action.id} type="button" onClick={() => onAction(action.id)}>
             {action.label}
           </button>
         ))}

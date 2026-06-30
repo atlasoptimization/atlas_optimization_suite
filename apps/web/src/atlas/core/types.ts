@@ -55,6 +55,7 @@ export type AtlasDecisionMetadata = {
 export type AtlasAtomMetadata = {
   name: string;
   importPath: string;
+  displayName?: string | null;
   signature: string;
   argumentNames: string[];
   defaultValues?: Record<string, string>;
@@ -62,6 +63,7 @@ export type AtlasAtomMetadata = {
   category?: string;
   module?: string;
   callable?: boolean;
+  uiOverrides?: Record<string, unknown> | null;
 };
 
 export type AtlasAtomInput = {
@@ -124,6 +126,8 @@ export type AtlasCard = {
     | "solver"
     | "result"
     | "workspace_reference";
+  modelObjectShape?: unknown;
+  modelObjectValue?: unknown;
   workspaceRole?: "definition" | "reference";
   functionKind?: AtlasFunctionKind;
   atomSpec?: AtlasAtomMetadata;
@@ -248,6 +252,9 @@ export type AtlasAction =
   | { type: "card.createFromTemplate"; templateId: string }
   | { type: "modelObject.define"; objectKind: "variable" | "parameter" | "constant" | "atom" | "constraint" | "objective" | "problem"; name: string; shape?: "scalar" | "vector" | "matrix"; atomSpec?: AtlasAtomMetadata; position?: AtlasPosition }
   | { type: "workspaceReference.create"; modelObjectId: string; position?: AtlasPosition }
+  | { type: "workspaceReference.duplicate"; cardId: string; position?: AtlasPosition }
+  | { type: "modelObject.delete"; modelObjectId: string }
+  | { type: "modelObject.rename"; modelObjectId: string; title: string }
   | { type: "connection.create"; source: AtlasConnectionEndpoint; target: AtlasConnectionEndpoint; semanticKind?: string }
   | { type: "connection.delete"; connectionId: string }
   | { type: "card.select"; cardId: string | null }

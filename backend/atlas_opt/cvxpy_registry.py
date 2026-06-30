@@ -24,6 +24,8 @@ class AtomSpec:
     category: str
     module: str
     callable: bool
+    displayName: str | None = None
+    uiOverrides: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-serializable atom metadata."""
@@ -103,6 +105,8 @@ def fallback_atoms() -> list[AtomSpec]:
             category="fallback",
             module="cvxpy",
             callable=False,
+            displayName=None,
+            uiOverrides=None,
         )
         for name in COMMON_ATOM_NAMES
     ]
@@ -121,6 +125,11 @@ def apply_atom_overrides(atoms: list[AtomSpec], override_path: Path = OVERRIDE_F
             updated.append(atom)
             continue
         fields = {key: value for key, value in override.items() if key in AtomSpec.__dataclass_fields__}
+        ui_overrides = {key: value for key, value in override.items() if key not in AtomSpec.__dataclass_fields__}
+        if "description" in ui_overrides and "doc" not in fields:
+            fields["doc"] = str(ui_overrides["description"])
+        if ui_overrides:
+            fields["uiOverrides"] = ui_overrides
         updated.append(replace(atom, **fields))
     return updated
 
@@ -170,6 +179,8 @@ def atom_spec_from_callable(name: str, value: Any, category: str) -> AtomSpec:
         category=category,
         module=getattr(value, "__module__", category),
         callable=callable(value),
+        displayName=None,
+        uiOverrides=None,
     )
 
 

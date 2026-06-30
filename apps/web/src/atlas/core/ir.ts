@@ -47,11 +47,13 @@ export type AtlasModelObjectBase = {
 
 export type AtlasVariableObject = AtlasModelObjectBase & {
   kind: "variable";
+  shape?: unknown;
   decision?: AtlasDecisionMetadata;
 };
 
 export type AtlasParameterObject = AtlasModelObjectBase & {
   kind: "parameter";
+  shape?: unknown;
   data?: unknown;
 };
 
@@ -382,6 +384,7 @@ function createModelObjectsFromState(state: AtlasWorkbenchState): AtlasModelObje
         id: objectId,
         kind: "variable",
         name: card.title,
+        shape: card.modelObjectShape,
         notes: card.notes,
         sourceCardId: card.id,
         decision: copyJson(card.decision ?? { variableType: "continuous", shape: "scalar" })
@@ -391,6 +394,7 @@ function createModelObjectsFromState(state: AtlasWorkbenchState): AtlasModelObje
         id: objectId,
         kind: "parameter",
         name: card.title,
+        shape: card.modelObjectShape,
         notes: card.notes,
         sourceCardId: card.id,
         data: copyJson(card.data ?? null)
@@ -400,6 +404,7 @@ function createModelObjectsFromState(state: AtlasWorkbenchState): AtlasModelObje
         id: objectId,
         kind: "constant",
         name: card.title,
+        value: card.modelObjectValue,
         notes: card.notes,
         sourceCardId: card.id,
         properties: card.properties.map((property) => ({ ...property }))
@@ -523,6 +528,8 @@ function modelObjectToCard(object: AtlasModelObject, node: AtlasWorkspaceNode): 
     type,
     modelObjectId: object.id,
     modelObjectKind: object.kind,
+    modelObjectShape: object.kind === "variable" || object.kind === "parameter" ? object.shape : undefined,
+    modelObjectValue: object.kind === "constant" ? object.value : undefined,
     workspaceRole: node.displayState.workspaceRole === "reference" ? "reference" : "definition",
     title: node.displayState.title ?? object.name,
     position: { ...node.position },

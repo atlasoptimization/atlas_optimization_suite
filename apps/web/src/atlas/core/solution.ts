@@ -18,7 +18,7 @@ export type AtlasSolutionConstraintResult = {
 export type AtlasSolveResult = {
   status: string;
   objectiveValue: number | null;
-  variableValues: Record<string, number | null>;
+  variableValues: Record<string, unknown>;
   constraints?: Record<string, AtlasSolutionConstraintResult>;
   diagnostics: AtlasSolutionDiagnostic[];
   code?: string | null;
@@ -35,10 +35,14 @@ export function parseAtlasSolveResult(value: unknown): AtlasSolveResult {
   return {
     status: typeof record.status === "string" ? record.status : "unknown",
     objectiveValue: readNullableNumber(record.objectiveValue),
-    variableValues: readNumberMap(record.variableValues),
+    variableValues: readValueMap(record.variableValues),
     constraints: readConstraintMap(record.constraints),
     diagnostics: readDiagnostics(record.diagnostics),
-    code: typeof record.code === "string" ? record.code : null
+    code: typeof record.code === "string"
+      ? record.code
+      : typeof record.generatedCode === "string"
+        ? record.generatedCode
+        : null
   };
 }
 
@@ -80,11 +84,9 @@ function readNullableNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function readNumberMap(value: unknown) {
+function readValueMap(value: unknown) {
   if (!isRecord(value)) return {};
-  return Object.fromEntries(
-    Object.entries(value).map(([key, entry]) => [key, readNullableNumber(entry)])
-  );
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, readJsonValue(entry)]));
 }
 
 function readConstraintMap(value: unknown) {
@@ -136,4 +138,15 @@ export function solutionRuntimeValues(solution: AtlasSolutionState): Record<stri
 
 export function hasModelContent(state: AtlasWorkbenchState) {
   return state.cards.length > 0 || state.queries.length > 0 || state.groups.length > 0;
+}
+
+function readJsonValue(value: unknown): unknown {
+  if (value === null || typeof value === "number" || typeof value === "string" || typeof value === "boolean") {
+    return value;
+  }
+  if (Array.isArray(value)) return value.map(readJsonValue);
+  if (isRecord(value)) {
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, readJsonValue(entry)]));
+  }
+  return null;
 }

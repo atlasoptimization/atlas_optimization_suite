@@ -10,6 +10,7 @@ import {
   createAtlasCard,
   createAtlasProperty,
   createAtlasTag,
+  deleteAtlasCanonicalObject,
   defineAtlasModelObject,
   deleteAtlasCard,
   deleteAtlasProperty,
@@ -131,6 +132,10 @@ import {
   validateAtlasModel
 } from "../src/atlas/api/backendClient";
 import { FALLBACK_ATOM_SPECS } from "../src/atlas/core/atoms";
+import {
+  ATLAS_BUILTIN_EXAMPLES,
+  loadAtlasBuiltinExample
+} from "../src/atlas/core/builtinExamples";
 import { atlasReducer } from "../src/atlas/core/reducer";
 import { normalizeAtlasState } from "../src/atlas/storage/localAtlasStorage";
 import { getAtlasCardTemplate } from "../src/atlas/core/templates";
@@ -144,6 +149,28 @@ import { nextDraggedAtlasPosition } from "../src/atlas/ui/workbench/AtlasWorkben
 import { AtlasExpressionPreview } from "../src/atlas/ui/query/AtlasExpressionPreview";
 import { AtlasSolutionPanel } from "../src/atlas/ui/solution/AtlasSolutionPanel";
 import { AtlasSearchPalette } from "../src/atlas/ui/search/AtlasSearchPalette";
+import { AtlasContextMenu } from "../src/atlas/ui/context/AtlasContextMenu";
+import {
+  executeTutorialAction,
+  ATLAS_TUTORIAL_STEPS,
+  createTutorialSession,
+  markTutorialStepApplied,
+  nextTutorialSession,
+  pendingTutorialActions,
+  previousTutorialSession,
+  resetTutorialSession,
+  tutorialStepsForExample,
+  tutorialResetState
+} from "../src/atlas/core/tutorial";
+import { AtlasExamplesPanel } from "../src/atlas/ui/examples/AtlasExamplesPanel";
+import {
+  AtlasCodeView,
+  AtlasDiagnosticsView,
+  AtlasIRView,
+  AtlasSolutionView,
+  AtlasViewTabs,
+  buildAtlasViewDiagnostics
+} from "../src/atlas/ui/views/AtlasMultiView";
 
 function emptyAtlasState(): AtlasWorkbenchState {
   return {
@@ -171,6 +198,8 @@ describe("Atlas app skeleton", () => {
     expect(html).toContain("Undo");
     expect(html).toContain("Redo");
     expect(html).toContain("Search");
+    expect(html).toContain("Tutorial");
+    expect(html).toContain("Examples");
     expect(html).toContain("Constructor");
     expect(html).toContain("Define objects");
     expect(html).toContain("Explorer");
@@ -235,6 +264,26 @@ describe("Atlas app skeleton", () => {
     expect(html).toContain("sum_squares");
     expect(html.toLowerCase()).toContain("cvxpy");
   });
+
+  it("renders a context menu with disabled and destructive actions", () => {
+    const html = renderToString(
+      <AtlasContextMenu
+        menu={{ kind: "canvas", x: 10, y: 20, position: { x: 100, y: 200 } }}
+        items={[
+          { id: "create-variable", label: "Create Variable" },
+          { id: "delete", label: "Delete canonical object", destructive: true },
+          { id: "paste", label: "Paste", disabled: true }
+        ]}
+        onSelect={() => undefined}
+        onClose={() => undefined}
+      />
+    );
+
+    expect(html).toContain("Create Variable");
+    expect(html).toContain("Delete canonical object");
+    expect(html).toContain("disabled");
+    expect(html).toContain("destructive");
+  });
 });
 
 describe("Atlas workbench interactions", () => {
@@ -256,6 +305,301 @@ describe("Atlas workbench interactions", () => {
         2
       )
     ).toEqual({ x: 110, y: 115 });
+  });
+});
+
+describe("Atlas multi-view workbench", () => {
+  it("renders the synchronized Object, IR, Code, Solution, and Diagnostics tabs", () => {
+    const html = renderToString(<AtlasViewTabs activeView="object" onChange={() => undefined} />);
+
+    expect(html).toContain("Object");
+    expect(html).toContain("IR");
+    expect(html).toContain("CVXPY Code");
+    expect(html).toContain("Solution");
+    expect(html).toContain("Diagnostics");
+    expect(html).toContain("aria-pressed=\"true\"");
+  });
+
+  it("keeps model state independent from tab switching", () => {
+    const state = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const before = exportAtlasIR(state).modelObjects;
+
+    renderToString(<AtlasViewTabs activeView="ir" onChange={() => undefined} />);
+    renderToString(<AtlasViewTabs activeView="solution" onChange={() => undefined} />);
+
+    expect(exportAtlasIR(state).modelObjects).toEqual(before);
+  });
+
+  it("renders current Atlas IR JSON in the IR view", () => {
+    const state = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const ir = exportAtlasIR(state);
+    const html = renderToString(<AtlasIRView ir={ir} onExport={() => undefined} onImport={() => undefined} />);
+
+    expect(html).toContain("Current model JSON");
+    expect(html).toContain("&quot;modelObjects&quot;");
+    expect(html).toContain("&quot;variables&quot;");
+    expect(html).toContain("&quot;x&quot;");
+    expect(html).toContain("Export IR");
+    expect(html).toContain("Import IR");
+  });
+
+  it("renders backend-generated code and unavailable code states", () => {
+    const generated = renderToString(
+      <AtlasCodeView
+        codeState={{ status: "success", code: "import cvxpy as cp", stale: false }}
+        solution={{ status: "empty" }}
+        backendStatus="connected"
+        onGenerateCode={() => undefined}
+      />
+    );
+    const unavailable = renderToString(
+      <AtlasCodeView
+        codeState={{ status: "empty" }}
+        solution={{ status: "empty" }}
+        backendStatus="unavailable"
+        onGenerateCode={() => undefined}
+      />
+    );
+
+    expect(generated).toContain("import cvxpy as cp");
+    expect(generated).toContain("Generate Code");
+    expect(unavailable).toContain("Backend unavailable / code not generated.");
+  });
+
+  it("renders solution empty, loading, success, error, and stale states", () => {
+    const successSolution = {
+      status: "success" as const,
+      stale: true,
+      result: {
+        status: "optimal",
+        objectiveValue: 10,
+        variableValues: { "var-x": 2, "var-y": [1, 2] },
+        constraints: {},
+        diagnostics: [],
+        code: "problem.solve()"
+      }
+    };
+
+    expect(
+      renderToString(
+        <AtlasSolutionView
+          solution={{ status: "empty" }}
+          onSolve={() => undefined}
+          onSelectVariable={() => undefined}
+          onSelectConstraint={() => undefined}
+        />
+      )
+    ).toContain("No solve results yet.");
+    expect(
+      renderToString(
+        <AtlasSolutionView
+          solution={{ status: "loading", previous: successSolution.result }}
+          onSolve={() => undefined}
+          onSelectVariable={() => undefined}
+          onSelectConstraint={() => undefined}
+        />
+      )
+    ).toContain("Solving...");
+    expect(
+      renderToString(
+        <AtlasSolutionView
+          solution={successSolution}
+          onSolve={() => undefined}
+          onSelectVariable={() => undefined}
+          onSelectConstraint={() => undefined}
+        />
+      )
+    ).toContain("Solution is stale because the model changed after solving.");
+    expect(
+      renderToString(
+        <AtlasSolutionView
+          solution={{ status: "error", message: "Backend solve failed." }}
+          onSolve={() => undefined}
+          onSelectVariable={() => undefined}
+          onSelectConstraint={() => undefined}
+        />
+      )
+    ).toContain("Backend solve failed.");
+  });
+
+  it("aggregates and renders diagnostics with selectable sources", () => {
+    const state = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const card = state.cards[0];
+    if (!card) throw new Error("Expected card.");
+    const diagnostics = buildAtlasViewDiagnostics({
+      ir: exportAtlasIR(state),
+      backendDiagnostics: ["Backend warning"],
+      runtimeDiagnostics: [
+        {
+          cardId: card.id,
+          diagnosticId: "diagnostic",
+          label: "Current value",
+          value: "missing",
+          status: "warning",
+          source: "validate"
+        }
+      ],
+      solution: {
+        status: "success",
+        stale: false,
+        result: {
+          status: "optimal",
+          objectiveValue: null,
+          variableValues: {},
+          diagnostics: [{ level: "error", message: "DCP error", sourceId: card.modelObjectId }],
+          code: null
+        }
+      }
+    });
+    const html = renderToString(
+      <AtlasDiagnosticsView diagnostics={diagnostics} stale={true} onValidate={() => undefined} onSelectSource={() => undefined} />
+    );
+
+    expect(diagnostics.map((diagnostic) => diagnostic.message)).toEqual(
+      expect.arrayContaining(["Backend warning", "Current value: missing", "DCP error"])
+    );
+    expect(html).toContain("Diagnostics may be stale because the model changed.");
+    expect(html).toContain("Backend warning");
+    expect(html).toContain("Current value: missing");
+    expect(html).toContain("DCP error");
+  });
+});
+
+describe("Atlas tutorial framework", () => {
+  it("advances, goes back, and resets tutorial session state", () => {
+    const session = createTutorialSession();
+    const advanced = nextTutorialSession(session);
+    const backedUp = previousTutorialSession(advanced);
+    const reset = resetTutorialSession();
+
+    expect(session.open).toBe(true);
+    expect(advanced.stepIndex).toBe(1);
+    expect(backedUp.stepIndex).toBe(0);
+    expect(reset.stepIndex).toBe(0);
+    expect(ATLAS_TUTORIAL_STEPS.length).toBeGreaterThan(1);
+  });
+
+  it("returns pending tutorial actions once per step", () => {
+    const session = createTutorialSession();
+    const actions = pendingTutorialActions(session);
+    const applied = markTutorialStepApplied(session, ATLAS_TUTORIAL_STEPS[0]?.id ?? "");
+
+    expect(actions.some((action) => action.type === "dispatch")).toBe(true);
+    expect(pendingTutorialActions(applied)).toEqual([]);
+  });
+
+  it("removes tutorial-created objects on reset without clearing user objects", () => {
+    const user = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const tutorialState = defineAtlasModelObject(user, "variable", "tutorial_x", "scalar");
+    const reset = tutorialResetState(tutorialState);
+
+    expect(reset.cards.map((card) => card.title)).toContain("x");
+    expect(reset.cards.map((card) => card.title)).not.toContain("tutorial_x");
+  });
+
+  it("loads built-in example scripts for LP, least squares, and ridge regression", () => {
+    expect(ATLAS_BUILTIN_EXAMPLES.map((example) => example.id)).toEqual([
+      "tiny-lp",
+      "least-squares",
+      "ridge-regression"
+    ]);
+
+    for (const example of ATLAS_BUILTIN_EXAMPLES) {
+      const state = loadAtlasBuiltinExample(example.id);
+      const ir = exportAtlasIR(state);
+      const steps = tutorialStepsForExample(example.id);
+
+      expect(state.cards.length).toBeGreaterThan(0);
+      expect(ir.modelObjects.problems.length).toBe(1);
+      expect(ir.connections.length).toBeGreaterThan(0);
+      if (example.id === "least-squares" || example.id === "ridge-regression") {
+        expect(ir.modelObjects.variables.find((variable) => variable.id === "var-x")?.shape).toEqual([2]);
+        expect(ir.modelObjects.constants.find((constant) => constant.id === "const-A")?.value).toEqual([
+          [1, 0],
+          [1, 1],
+          [1, 2]
+        ]);
+      }
+      expect(steps[0]?.actions[0]).toMatchObject({ type: "loadExample", exampleId: example.id });
+      expect(steps.at(-1)?.actions.some((action) => action.type === "solve")).toBe(true);
+    }
+  });
+
+  it("executes serializable tutorial actions through normal reducer actions", () => {
+    let state = emptyAtlasState();
+    const defineResult = executeTutorialAction(state, {
+      type: "dispatch",
+      action: {
+        type: "modelObject.define",
+        objectKind: "variable",
+        name: "x",
+        shape: "scalar",
+        position: { x: 100, y: 120 }
+      }
+    });
+    if (!defineResult.dispatch) throw new Error("Expected define dispatch.");
+    state = atlasReducer(state, defineResult.dispatch);
+
+    const modelObjectId = getCanonicalModelObjects(state)[0]?.modelObjectId;
+    if (!modelObjectId) throw new Error("Expected canonical model object.");
+    const placeResult = executeTutorialAction(state, {
+      type: "dispatch",
+      action: {
+        type: "workspaceReference.create",
+        modelObjectId,
+        position: { x: 300, y: 120 }
+      }
+    });
+    if (!placeResult.dispatch) throw new Error("Expected reference dispatch.");
+    state = atlasReducer(state, placeResult.dispatch);
+
+    const [definition, reference] = state.cards;
+    if (!definition || !reference) throw new Error("Expected definition and reference cards.");
+    const connectResult = executeTutorialAction(state, {
+      type: "dispatch",
+      action: {
+        type: "connection.create",
+        source: { nodeId: definition.id, objectId: modelObjectId, port: "expression" },
+        target: { nodeId: reference.id, objectId: modelObjectId, slot: "arg0" }
+      }
+    });
+    if (!connectResult.dispatch) throw new Error("Expected connection dispatch.");
+    state = atlasReducer(state, connectResult.dispatch);
+
+    expect(getCanonicalModelObjects(state)).toHaveLength(1);
+    expect(state.cards.filter((card) => card.modelObjectId === modelObjectId)).toHaveLength(2);
+    expect(state.connections).toHaveLength(1);
+  });
+
+  it("reports scripted action failures without mutating state", () => {
+    const state = emptyAtlasState();
+    const result = executeTutorialAction(state, {
+      type: "loadExample",
+      exampleId: "missing-example" as never
+    });
+
+    expect(result.state).toBe(state);
+    expect(result.diagnostic).toContain("Unknown Atlas example");
+  });
+});
+
+describe("Atlas built-in examples UI", () => {
+  it("renders load and guided tutorial actions for every built-in example", () => {
+    const html = renderToString(
+      <AtlasExamplesPanel
+        open={true}
+        examples={ATLAS_BUILTIN_EXAMPLES}
+        onLoad={() => undefined}
+        onTutorial={() => undefined}
+        onClose={() => undefined}
+      />
+    );
+
+    expect(html).toContain("Built-in CVXPY examples");
+    expect(html).toContain("Tiny linear program");
+    expect(html).toContain("Least squares");
+    expect(html).toContain("Ridge regression");
+    expect(html.match(/Guided tutorial/g)?.length).toBe(3);
   });
 });
 
@@ -296,6 +640,22 @@ describe("Atlas canonical model definitions", () => {
     expect(getCanonicalModelObjects(withoutReference)).toHaveLength(1);
     expect(withoutReference.cards.some((card) => card.modelObjectId === modelObjectId)).toBe(true);
     expect(withoutReference.cards.some((card) => card.id === referenceId)).toBe(false);
+  });
+
+  it("deleting a canonical object removes all visual references and related connections", () => {
+    const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const modelObjectId = getCanonicalModelObjects(withVariable)[0]?.modelObjectId;
+    if (!modelObjectId) throw new Error("Expected canonical variable id.");
+    const withReference = createAtlasWorkspaceReference(withVariable, modelObjectId);
+    const withConnection = addAtlasConnection(
+      withReference,
+      { nodeId: withReference.cards[0]?.id, objectId: modelObjectId, port: "expression" },
+      { nodeId: withReference.cards[1]?.id, objectId: modelObjectId, slot: "arg0" }
+    );
+    const deleted = deleteAtlasCanonicalObject(withConnection, modelObjectId);
+
+    expect(deleted.cards.some((card) => card.modelObjectId === modelObjectId)).toBe(false);
+    expect(deleted.connections).toHaveLength(0);
   });
 
   it("serializes semantic connections between workspace ports and slots", () => {
@@ -467,6 +827,23 @@ describe("Atlas canonical model definitions", () => {
     expect(html).toContain("Output");
     expect(html).toContain("CONVEX");
     expect(html).toContain("DCP");
+  });
+
+  it("renders optional atom UI override hints", () => {
+    const atomSpec = {
+      ...FALLBACK_ATOM_SPECS.find((atom) => atom.name === "norm")!,
+      category: "Norms",
+      uiOverrides: {
+        description: "Use p dropdown values such as 1, 2, inf, fro, and nuc.",
+        argumentUiHints: { p: { control: "select", options: [1, 2, "inf", "fro", "nuc"] } }
+      }
+    };
+    const state = defineAtlasModelObject(emptyAtlasState(), "atom", atomSpec.name, "scalar", atomSpec);
+    const atomConfig = state.cards[0]?.atomConfig;
+    if (!atomConfig) throw new Error("Expected atom config.");
+    const html = renderToString(<AtlasAtomNode atomConfig={atomConfig} />);
+
+    expect(html).toContain("Use p dropdown values");
   });
 });
 
@@ -2094,6 +2471,58 @@ describe("Atlas card model", () => {
       "http://backend.test/solve",
       "http://backend.test/cvxpy/atoms"
     ]);
+  });
+
+  it("parses mocked backend solve success with generated code and variable values", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({
+      ok: true,
+      json: async () => ({
+        status: "optimal",
+        objectiveValue: 10,
+        variableValues: { "var-x": 2, "var-y": 2 },
+        variables: [
+          { id: "var-x", name: "x", value: 2 },
+          { id: "var-y", name: "y", value: 2 }
+        ],
+        constraints: {
+          "constraint-sum": { left: 4, right: 4, residual: 0, satisfied: true }
+        },
+        generatedCode: "problem.solve()",
+        diagnostics: [],
+        solverName: "CLARABEL"
+      })
+    }) as Response) as typeof fetch;
+
+    const response = await solveAtlasModel(
+      exportAtlasIR(emptyAtlasState(), { exportedAt: "2026-01-01T00:00:00.000Z" }),
+      "http://backend.test"
+    );
+    const result = parseAtlasSolveResult(response);
+
+    globalThis.fetch = originalFetch;
+    expect(result.status).toBe("optimal");
+    expect(result.objectiveValue).toBe(10);
+    expect(result.variableValues["var-x"]).toBe(2);
+    expect(result.code).toBe("problem.solve()");
+  });
+
+  it("surfaces mocked backend solve failures as readable errors", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({
+      ok: false,
+      status: 500,
+      json: async () => ({})
+    }) as Response) as typeof fetch;
+
+    await expect(
+      solveAtlasModel(
+        exportAtlasIR(emptyAtlasState(), { exportedAt: "2026-01-01T00:00:00.000Z" }),
+        "http://backend.test"
+      )
+    ).rejects.toThrow("Atlas backend /solve failed with HTTP 500.");
+
+    globalThis.fetch = originalFetch;
   });
 });
 

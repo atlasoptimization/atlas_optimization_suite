@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent, type PointerEvent } from "react";
+import { useRef, useState, type DragEvent, type MouseEvent, type PointerEvent } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import type { AtlasAtomSpec } from "../../core/atoms";
 import type { AtlasCvxpyObjectMetadata } from "../../api/backendClient";
@@ -38,6 +38,9 @@ type AtlasWorkbenchProps = {
   onAttachModule: (cardId: string, kind: AtlasCardModuleKind, position: AtlasPosition) => void;
   onMoveModule: (cardId: string, moduleId: string, position: AtlasPosition) => void;
   onSelectDiagnostic: (diagnostic: AtlasRuntimeDiagnostic) => void;
+  onNodeContextMenu: (event: MouseEvent<HTMLElement>, card: AtlasCard) => void;
+  onCanvasContextMenu: (event: MouseEvent<HTMLElement>, position: AtlasPosition) => void;
+  onConnectionContextMenu: (event: MouseEvent<SVGLineElement>, connection: AtlasConnection) => void;
 };
 
 type DragState = {
@@ -85,7 +88,10 @@ export function AtlasWorkbench({
   onCreateConnection,
   onAttachModule,
   onMoveModule,
-  onSelectDiagnostic
+  onSelectDiagnostic,
+  onNodeContextMenu,
+  onCanvasContextMenu,
+  onConnectionContextMenu
 }: AtlasWorkbenchProps) {
   const dragRef = useRef<DragState | null>(null);
   const scaleRef = useRef(ATLAS_INITIAL_SCALE);
@@ -150,7 +156,7 @@ export function AtlasWorkbench({
     onMoveCard(drag.cardId, drag.position);
   }
 
-  function referenceDropPosition(event: DragEvent<HTMLElement>): AtlasPosition {
+  function referenceDropPosition(event: Pick<DragEvent<HTMLElement> | MouseEvent<HTMLElement>, "clientX" | "clientY">): AtlasPosition {
     const rect = workbenchRef.current?.getBoundingClientRect();
     const transform = transformRef.current;
     if (!rect) return { x: 760, y: 660 };
@@ -188,6 +194,10 @@ export function AtlasWorkbench({
         } else {
           onCreateWorkspaceReference(modelObjectId, position);
         }
+      }}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onCanvasContextMenu(event, referenceDropPosition(event));
       }}
     >
       <TransformWrapper
@@ -246,6 +256,11 @@ export function AtlasWorkbench({
                     y1={line.y1}
                     x2={line.x2}
                     y2={line.y2}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onConnectionContextMenu(event, connection);
+                    }}
                   />
                 );
               })}
@@ -279,6 +294,11 @@ export function AtlasWorkbench({
                 onMoveModule={onMoveModule}
                 onSelectDiagnostic={onSelectDiagnostic}
                 onCreateConnection={onCreateConnection}
+                onContextMenu={(event, contextCard) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onNodeContextMenu(event, contextCard);
+                }}
               />
             ))}
           </div>

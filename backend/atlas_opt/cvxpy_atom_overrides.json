@@ -1,1 +1,25 @@
-{}
+{
+  "norm": {
+    "category": "Norms",
+    "displayName": "Norm",
+    "description": "Vector or matrix norm. Common p values include 1, 2, inf, fro, and nuc.",
+    "argumentUiHints": {
+      "p": {
+        "control": "select",
+        "options": [1, 2, "inf", "fro", "nuc"]
+      }
+    },
+    "examples": ["norm(x, 2)", "norm(X, 'fro')"]
+  },
+  "sum_squares": {
+    "category": "Quadratic",
+    "displayName": "Sum of Squares",
+    "description": "Sum of squared entries of an expression."
+  },
+  "quad_form": {
+    "category": "Quadratic",
+    "displayName": "Quadratic Form",
+    "description": "Quadratic form x.T @ P @ x.",
+    "warnings": ["The second argument should be symmetric positive semidefinite for DCP usage."]
+  }
+}

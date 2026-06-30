@@ -1,6 +1,7 @@
 export type AtlasAtomSpec = {
   name: string;
   importPath: string;
+  displayName?: string | null;
   signature: string;
   argumentNames: string[];
   defaultValues: Record<string, string>;
@@ -8,6 +9,7 @@ export type AtlasAtomSpec = {
   category: string;
   module: string;
   callable: boolean;
+  uiOverrides?: Record<string, unknown> | null;
 };
 
 export const FALLBACK_ATOM_SPECS: AtlasAtomSpec[] = [

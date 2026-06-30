@@ -167,6 +167,8 @@ function ResultSection({ title, children }: { title: string; children: ReactNode
   );
 }
 
-function formatValue(value: number | null | undefined) {
-  return typeof value === "number" && Number.isFinite(value) ? value.toLocaleString() : "n/a";
+function formatValue(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value)) return value.toLocaleString();
+  if (Array.isArray(value)) return `[${value.map(formatValue).join(", ")}]`;
+  return value === null || value === undefined ? "n/a" : String(value);
 }

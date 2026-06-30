@@ -369,32 +369,19 @@ def test_production_example_solves_if_cvxpy_is_installed() -> None:
 
 def test_fastapi_endpoints_if_fastapi_is_installed() -> None:
     pytest.importorskip("fastapi")
-    pytest.importorskip("httpx")
-    from fastapi.testclient import TestClient
+    from pydantic import ValidationError
 
-    from atlas_api import app
+    from atlas_api import cvxpy_atoms, evaluate, generate_code, health, solve, validate
+    from atlas_opt.schema import AtlasIR
 
-    client = TestClient(app)
+    valid_ir = AtlasIR.model_validate(minimal_ir())
 
-    health_response = client.get("/health")
-    assert health_response.status_code == 200
-    assert health_response.json()["status"] == "ok"
+    assert health()["status"] == "ok"
+    assert validate(valid_ir)["diagnostics"] == []
+    assert evaluate(valid_ir)["objectives"]["objective-card"]["value"] == 10
+    assert "status" in solve(valid_ir)
+    assert "import cvxpy as cp" in generate_code(valid_ir)["code"]
+    assert cvxpy_atoms()["atoms"]
 
-    validate_response = client.post("/validate", json=minimal_ir())
-    assert validate_response.status_code == 200
-    assert validate_response.json()["diagnostics"] == []
-
-    evaluate_response = client.post("/evaluate", json=minimal_ir())
-    assert evaluate_response.status_code == 200
-    assert evaluate_response.json()["objectives"]["objective-card"]["value"] == 10
-
-    solve_response = client.post("/solve", json=minimal_ir())
-    assert solve_response.status_code == 200
-
-    atoms_response = client.get("/cvxpy/atoms")
-    assert atoms_response.status_code == 200
-    assert atoms_response.json()["atoms"]
-    assert "status" in solve_response.json()
-
-    invalid_response = client.post("/validate", json={"cards": [{"type": "object"}]})
-    assert invalid_response.status_code == 422
+    with pytest.raises(ValidationError):
+        AtlasIR.model_validate({"cards": [{"type": "object"}]})

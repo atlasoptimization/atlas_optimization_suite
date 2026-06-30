@@ -9,9 +9,136 @@ from atlas_opt.schema import AtlasIR
 def test_minimal_valid_ir() -> None:
     ir = AtlasIR.model_validate({})
 
-    assert ir.schemaVersion == "0.1"
+    assert ir.schemaVersion == "0.2-cvxpy"
     assert ir.cards == []
-    assert ir.model_dump()["schemaVersion"] == "0.1"
+    assert ir.modelObjects.variables == []
+    assert ir.model_dump()["schemaVersion"] == "0.2-cvxpy"
+
+
+def test_cvxpy_first_ir_allows_two_workspace_nodes_for_one_variable() -> None:
+    ir = AtlasIR.model_validate(
+        {
+            "modelObjects": {
+                "variables": [
+                    {
+                        "id": "var-x",
+                        "kind": "variable",
+                        "name": "x",
+                        "decision": {"variableType": "continuous", "shape": "scalar"},
+                    }
+                ]
+            },
+            "workspaceNodes": [
+                {
+                    "id": "node-x-main",
+                    "modelObjectId": "var-x",
+                    "modelObjectKind": "variable",
+                    "position": {"x": 10, "y": 20},
+                },
+                {
+                    "id": "node-x-ref",
+                    "modelObjectId": "var-x",
+                    "modelObjectKind": "variable",
+                    "position": {"x": 200, "y": 20},
+                },
+            ],
+        }
+    )
+
+    assert len(ir.modelObjects.variables) == 1
+    assert [node.modelObjectId for node in ir.workspaceNodes] == ["var-x", "var-x"]
+
+
+def test_duplicate_model_object_id_raises_validation_error() -> None:
+    with pytest.raises(ValidationError, match="Duplicate model object id"):
+        AtlasIR.model_validate(
+            {
+                "modelObjects": {
+                    "variables": [{"id": "shared", "kind": "variable", "name": "x"}],
+                    "constants": [{"id": "shared", "kind": "constant", "name": "c"}],
+                }
+            }
+        )
+
+
+def test_workspace_node_missing_model_object_raises_validation_error() -> None:
+    with pytest.raises(ValidationError, match="references missing model object"):
+        AtlasIR.model_validate(
+            {
+                "workspaceNodes": [
+                    {
+                        "id": "node-missing",
+                        "modelObjectId": "var-missing",
+                        "modelObjectKind": "variable",
+                    }
+                ]
+            }
+        )
+
+
+def test_connection_missing_endpoint_raises_validation_error() -> None:
+    with pytest.raises(ValidationError, match="missing workspace node"):
+        AtlasIR.model_validate(
+            {
+                "modelObjects": {
+                    "variables": [{"id": "var-x", "kind": "variable", "name": "x"}],
+                    "constants": [{"id": "const-one", "kind": "constant", "name": "one"}],
+                },
+                "workspaceNodes": [
+                    {
+                        "id": "node-x",
+                        "modelObjectId": "var-x",
+                        "modelObjectKind": "variable",
+                    }
+                ],
+                "connections": [
+                    {
+                        "id": "connection-bad",
+                        "source": {"nodeId": "node-missing"},
+                        "target": {"objectId": "const-one"},
+                    }
+                ],
+            }
+        )
+
+
+def test_generic_atom_object_ir() -> None:
+    ir = AtlasIR.model_validate(
+        {
+            "modelObjects": {
+                "variables": [{"id": "var-x", "kind": "variable", "name": "x"}],
+                "atoms": [
+                    {
+                        "id": "atom-norm",
+                        "kind": "atom",
+                        "name": "norm",
+                        "atomName": "norm",
+                        "importPath": "cvxpy.norm",
+                        "displayName": "norm",
+                        "positionalInputs": [
+                            {
+                                "id": "arg_0",
+                                "name": "x",
+                                "kind": "reference",
+                                "objectId": "var-x",
+                            }
+                        ],
+                        "keywordInputs": {
+                            "p": {"id": "kw_p", "name": "p", "kind": "literal", "value": 2}
+                        },
+                        "outputName": "expression",
+                        "metadata": {"signature": "(x, p=2)"},
+                    }
+                ],
+            },
+        }
+    )
+
+    atom = ir.modelObjects.atoms[0]
+    assert atom.atomName == "norm"
+    assert atom.importPath == "cvxpy.norm"
+    assert atom.positionalInputs[0]["objectId"] == "var-x"
+    assert atom.keywordInputs["p"]["value"] == 2
 
 
 def test_card_with_tags_and_properties() -> None:

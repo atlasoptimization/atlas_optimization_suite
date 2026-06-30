@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from atlas_opt.optimizer import AtlasOptimizer
+from atlas_opt.cvxpy_registry import discover_cvxpy_atoms
 from atlas_opt.schema import AtlasIR
 
 
@@ -24,6 +25,14 @@ def health():
     """Return backend health status."""
 
     return {"status": "ok"}
+
+
+@app.get("/cvxpy/atoms")
+def cvxpy_atoms():
+    """Return discovered CVXPY atom metadata."""
+
+    atoms = [atom.to_dict() for atom in discover_cvxpy_atoms()]
+    return {"atoms": atoms}
 
 
 @app.post("/validate")

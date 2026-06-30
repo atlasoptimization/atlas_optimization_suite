@@ -6,12 +6,16 @@ import {
   addAtlasCardFromTemplate,
   addAtlasProperty,
   addAtlasTag,
+  createAtlasWorkspaceReference,
   createAtlasCard,
   createAtlasProperty,
   createAtlasTag,
+  defineAtlasModelObject,
   deleteAtlasCard,
   deleteAtlasProperty,
   deleteAtlasTag,
+  getCanonicalModelObjects,
+  updateAtlasAtomInput,
   updateAtlasProperty,
   updateAtlasCardDetails,
   updateAtlasTag,
@@ -82,6 +86,10 @@ import {
   updateConstraintConfig
 } from "../src/atlas/core/constraints";
 import {
+  addAtlasConnection,
+  getInvalidAtlasConnections
+} from "../src/atlas/core/connections";
+import {
   evaluateAtlasWorkbench,
   evaluateExpression
 } from "../src/atlas/core/evaluator";
@@ -90,9 +98,12 @@ import {
   renderExpressionSymbol
 } from "../src/atlas/core/symbolic";
 import {
+  addWorkspaceReferenceToIR,
+  deleteWorkspaceNodeFromIR,
   exportAtlasIR,
   importAtlasIR,
   serializeAtlasIR,
+  validateCvxpyFirstIR,
   validateAtlasIR
 } from "../src/atlas/core/ir";
 import { createProductionPlanningExample } from "../src/atlas/core/examples";
@@ -114,17 +125,22 @@ import {
 import {
   checkAtlasBackendHealth,
   evaluateAtlasModel,
+  fetchCvxpyAtoms,
   generateAtlasCode,
   solveAtlasModel,
   validateAtlasModel
 } from "../src/atlas/api/backendClient";
+import { FALLBACK_ATOM_SPECS } from "../src/atlas/core/atoms";
 import { atlasReducer } from "../src/atlas/core/reducer";
 import { normalizeAtlasState } from "../src/atlas/storage/localAtlasStorage";
 import { getAtlasCardTemplate } from "../src/atlas/core/templates";
 import type { AtlasWorkbenchState } from "../src/atlas/core/types";
 import { AtlasApp } from "../src/atlas/ui/AtlasApp";
+import { AtlasConstructorPanel } from "../src/atlas/ui/constructor/AtlasConstructorPanel";
 import { AtlasCardView } from "../src/atlas/ui/workbench/AtlasCardView";
+import { AtlasAtomNode } from "../src/atlas/ui/workbench/AtlasAtomNode";
 import { AtlasGroupView } from "../src/atlas/ui/workbench/AtlasGroupView";
+import { nextDraggedAtlasPosition } from "../src/atlas/ui/workbench/AtlasWorkbench";
 import { AtlasExpressionPreview } from "../src/atlas/ui/query/AtlasExpressionPreview";
 import { AtlasSolutionPanel } from "../src/atlas/ui/solution/AtlasSolutionPanel";
 import { AtlasSearchPalette } from "../src/atlas/ui/search/AtlasSearchPalette";
@@ -134,6 +150,7 @@ function emptyAtlasState(): AtlasWorkbenchState {
     cards: [],
     groups: [],
     queries: [],
+    connections: [],
     selectedCardId: null,
     selectedGroupId: null,
     selectedQueryId: null
@@ -145,14 +162,19 @@ describe("Atlas app skeleton", () => {
     const html = renderToString(<AtlasApp />);
 
     expect(html).toContain("Atlas Optimization Suite");
+    expect(html).toContain("Validate");
     expect(html).toContain("Evaluate");
     expect(html).toContain("Solve");
-    expect(html).toContain("Inspect");
     expect(html).toContain("Export");
+    expect(html).toContain("Save");
+    expect(html).toContain("Load");
     expect(html).toContain("Undo");
     expect(html).toContain("Redo");
     expect(html).toContain("Search");
-    expect(html).toContain("Build optimization models from typed cards.");
+    expect(html).toContain("Constructor");
+    expect(html).toContain("Define objects");
+    expect(html).toContain("Explorer");
+    expect(html).toContain("Build optimization problems from solver primitives.");
     expect(html).toContain("Objectives");
     expect(html).toContain("Constraints");
     expect(html).toContain("Inspector");
@@ -184,10 +206,267 @@ describe("Atlas app skeleton", () => {
     );
 
     expect(html).toContain("Command palette");
-    expect(html).toContain("Create Object card");
-    expect(html).toContain("Load production planning example");
+    expect(html).toContain("Create Constant card");
+    expect(html).toContain("Load linear CVXPY example");
     expect(html).toContain("Search Atlas model and commands");
     expect(html).not.toContain("disabled");
+  });
+
+  it("renders a backend-driven atom palette", () => {
+    const atomSpecs = FALLBACK_ATOM_SPECS.filter((atomSpec) =>
+      ["norm", "sum_squares"].includes(atomSpec.name)
+    );
+    const html = renderToString(
+      <AtlasConstructorPanel
+        cards={[]}
+        templates={[]}
+        atomSpecs={atomSpecs}
+        atomRegistryStatus="Loaded 2 atoms from backend registry."
+        onCreateCard={() => undefined}
+        onCreateFromTemplate={() => undefined}
+        onCreateGroup={() => undefined}
+        onDefineModelObject={() => undefined}
+        onCreateWorkspaceReference={() => undefined}
+      />
+    );
+
+    expect(html).toContain("Loaded 2 atoms from backend registry.");
+    expect(html).toContain("norm");
+    expect(html).toContain("sum_squares");
+    expect(html.toLowerCase()).toContain("cvxpy");
+  });
+});
+
+describe("Atlas workbench interactions", () => {
+  it("converts pointer drag deltas through the active zoom scale", () => {
+    expect(
+      nextDraggedAtlasPosition(
+        { x: 100, y: 100 },
+        { x: 10, y: 10 },
+        { x: 30, y: 40 },
+        0.5
+      )
+    ).toEqual({ x: 140, y: 160 });
+
+    expect(
+      nextDraggedAtlasPosition(
+        { x: 100, y: 100 },
+        { x: 10, y: 10 },
+        { x: 30, y: 40 },
+        2
+      )
+    ).toEqual({ x: 110, y: 115 });
+  });
+});
+
+describe("Atlas canonical model definitions", () => {
+  it("defines a canonical variable and lists it as one model object", () => {
+    const state = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const canonical = getCanonicalModelObjects(state);
+
+    expect(canonical).toHaveLength(1);
+    expect(canonical[0]?.title).toBe("x");
+    expect(canonical[0]?.modelObjectKind).toBe("variable");
+    expect(canonical[0]?.workspaceRole).toBe("definition");
+  });
+
+  it("creates multiple workspace references that share one model object id", () => {
+    const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const modelObjectId = getCanonicalModelObjects(withVariable)[0]?.modelObjectId;
+    if (!modelObjectId) throw new Error("Expected canonical variable id.");
+    const withFirstReference = createAtlasWorkspaceReference(withVariable, modelObjectId, { x: 100, y: 100 });
+    const withSecondReference = createAtlasWorkspaceReference(withFirstReference, modelObjectId, { x: 400, y: 100 });
+
+    expect(getCanonicalModelObjects(withSecondReference)).toHaveLength(1);
+    expect(withSecondReference.cards.filter((card) => card.modelObjectId === modelObjectId)).toHaveLength(3);
+    expect(
+      withSecondReference.cards.filter((card) => card.workspaceRole === "reference").map((card) => card.position)
+    ).toEqual([{ x: 100, y: 100 }, { x: 400, y: 100 }]);
+  });
+
+  it("deleting a workspace reference keeps the canonical definition", () => {
+    const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const modelObjectId = getCanonicalModelObjects(withVariable)[0]?.modelObjectId;
+    if (!modelObjectId) throw new Error("Expected canonical variable id.");
+    const withReference = createAtlasWorkspaceReference(withVariable, modelObjectId);
+    const referenceId = withReference.cards.find((card) => card.workspaceRole === "reference")?.id;
+    if (!referenceId) throw new Error("Expected reference card.");
+    const withoutReference = deleteAtlasCard(withReference, referenceId);
+
+    expect(getCanonicalModelObjects(withoutReference)).toHaveLength(1);
+    expect(withoutReference.cards.some((card) => card.modelObjectId === modelObjectId)).toBe(true);
+    expect(withoutReference.cards.some((card) => card.id === referenceId)).toBe(false);
+  });
+
+  it("serializes semantic connections between workspace ports and slots", () => {
+    const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const withAtom = defineAtlasModelObject(withVariable, "atom", "sum", "scalar");
+    const variableNode = withAtom.cards.find((card) => card.modelObjectKind === "variable");
+    const atomNode = withAtom.cards.find((card) => card.modelObjectKind === "atom");
+    if (!variableNode || !atomNode) throw new Error("Expected variable and atom nodes.");
+    const connected = addAtlasConnection(
+      withAtom,
+      { nodeId: variableNode.id, objectId: variableNode.modelObjectId, port: "expression" },
+      { nodeId: atomNode.id, objectId: atomNode.modelObjectId, slot: "arg0" }
+    );
+    const imported = importAtlasIR(JSON.parse(serializeAtlasIR(exportAtlasIR(connected))));
+
+    expect(imported.diagnostics).toEqual([]);
+    expect(imported.state.connections).toHaveLength(1);
+    expect(imported.state.connections[0]?.source.port).toBe("expression");
+    expect(imported.state.connections[0]?.target.slot).toBe("arg0");
+  });
+
+  it("reports invalid connection diagnostics without crashing", () => {
+    const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const invalid = addAtlasConnection(
+      withVariable,
+      { nodeId: "missing-node", objectId: "missing-object", port: "expression" },
+      { nodeId: withVariable.cards[0]?.id, objectId: withVariable.cards[0]?.modelObjectId, slot: "arg0" }
+    );
+
+    expect(getInvalidAtlasConnections(invalid)).toHaveLength(1);
+    expect(validateCvxpyFirstIR(exportAtlasIR(invalid))).toContain(
+      `Connection "connection_missing-node_expression_${withVariable.cards[0]?.id}_arg0" source references missing workspace node "missing-node".`
+    );
+  });
+
+  it("renders expression ports and atom input slots", () => {
+    const variable = {
+      ...createAtlasCard("decision", { id: "node-x" }),
+      title: "x",
+      modelObjectId: "var-x",
+      modelObjectKind: "variable" as const
+    };
+    const atom = {
+      ...createAtlasCard("function", { id: "node-sum" }),
+      title: "sum",
+      modelObjectId: "atom-sum",
+      modelObjectKind: "atom" as const
+    };
+    const html = renderToString(
+      <>
+        <AtlasCardView
+          card={variable}
+          allCards={[variable, atom]}
+          queries={[]}
+          dependencyPropertyNames={new Set()}
+          diagnostics={[]}
+          selected
+          highlighted={false}
+          onPointerDown={() => undefined}
+          onPointerMove={() => undefined}
+          onPointerUp={() => undefined}
+          onPointerCancel={() => undefined}
+        />
+        <AtlasCardView
+          card={atom}
+          allCards={[variable, atom]}
+          queries={[]}
+          dependencyPropertyNames={new Set()}
+          diagnostics={[]}
+          selected
+          highlighted={false}
+          onPointerDown={() => undefined}
+          onPointerMove={() => undefined}
+          onPointerUp={() => undefined}
+          onPointerCancel={() => undefined}
+        />
+      </>
+    );
+
+    expect(html).toContain("expr out");
+    expect(html).toContain("arg 1");
+    expect(html).toContain("arg 2");
+  });
+
+  it("stores CVXPY atom metadata when creating an atom object", () => {
+    const atomSpec = FALLBACK_ATOM_SPECS.find((atom) => atom.name === "norm");
+    if (!atomSpec) throw new Error("Expected norm fallback atom.");
+    const state = defineAtlasModelObject(emptyAtlasState(), "atom", atomSpec.name, "scalar", atomSpec);
+    const atomCard = state.cards[0];
+
+    expect(atomCard?.atomSpec?.name).toBe("norm");
+    expect(atomCard?.atomSpec?.importPath).toBe("cvxpy.norm");
+    expect(atomCard?.atomSpec?.signature).toBe("(x, p=2, axis=None)");
+    expect(atomCard?.atomConfig?.atomName).toBe("norm");
+    expect(atomCard?.atomConfig?.positionalInputs[0]?.name).toBe("x");
+    expect(atomCard?.atomConfig?.keywordInputs.p?.value).toBe(2);
+    expect(exportAtlasIR(state).modelObjects.atoms[0]?.atomSpec?.name).toBe("norm");
+  });
+
+  it("serializes generic AtomObject inputs through Atlas IR", () => {
+    const atomSpec = FALLBACK_ATOM_SPECS.find((atom) => atom.name === "norm");
+    if (!atomSpec) throw new Error("Expected norm fallback atom.");
+    const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const withAtom = defineAtlasModelObject(withVariable, "atom", atomSpec.name, "scalar", atomSpec);
+    const atomCard = withAtom.cards.find((card) => card.modelObjectKind === "atom");
+    const variableCard = withAtom.cards.find((card) => card.modelObjectKind === "variable");
+    if (!atomCard || !variableCard || !variableCard.modelObjectId) throw new Error("Expected atom and variable.");
+    const configured = updateAtlasAtomInput(
+      withAtom,
+      atomCard.id,
+      "positional",
+      atomCard.atomConfig?.positionalInputs[0]?.id ?? "arg_0",
+      { kind: "reference", objectId: variableCard.modelObjectId }
+    );
+    const ir = exportAtlasIR(configured);
+    const atomObject = ir.modelObjects.atoms[0];
+
+    expect(atomObject?.atomName).toBe("norm");
+    expect(atomObject?.importPath).toBe("cvxpy.norm");
+    expect(atomObject?.displayName).toBe("norm");
+    expect(atomObject?.positionalInputs[0]?.objectId).toBe(variableCard.modelObjectId);
+    expect(atomObject?.keywordInputs.p?.value).toBe(2);
+    expect(importAtlasIR(JSON.parse(serializeAtlasIR(ir))).diagnostics).toEqual([]);
+  });
+
+  it("updates positional and keyword atom inputs independently", () => {
+    const atomSpec = FALLBACK_ATOM_SPECS.find((atom) => atom.name === "norm");
+    if (!atomSpec) throw new Error("Expected norm fallback atom.");
+    const state = defineAtlasModelObject(emptyAtlasState(), "atom", atomSpec.name, "scalar", atomSpec);
+    const atomCard = state.cards[0];
+    if (!atomCard?.atomConfig) throw new Error("Expected atom config.");
+    const withReference = updateAtlasAtomInput(
+      state,
+      atomCard.id,
+      "positional",
+      atomCard.atomConfig.positionalInputs[0]?.id ?? "arg_0",
+      { objectId: "var-x" }
+    );
+    const withKeyword = updateAtlasAtomInput(
+      withReference,
+      atomCard.id,
+      "keyword",
+      "p",
+      { kind: "literal", value: 1 }
+    );
+    const updated = withKeyword.cards[0]?.atomConfig;
+
+    expect(updated?.positionalInputs[0]?.objectId).toBe("var-x");
+    expect(updated?.keywordInputs.p?.value).toBe(1);
+  });
+
+  it("renders a generic AtomNode with mocked norm metadata", () => {
+    const atomSpec = FALLBACK_ATOM_SPECS.find((atom) => atom.name === "norm");
+    if (!atomSpec) throw new Error("Expected norm fallback atom.");
+    const state = defineAtlasModelObject(emptyAtlasState(), "atom", atomSpec.name, "scalar", atomSpec);
+    const atomConfig = state.cards[0]?.atomConfig;
+    if (!atomConfig) throw new Error("Expected atom config.");
+    const html = renderToString(
+      <AtlasAtomNode
+        atomConfig={atomConfig}
+        metadata={{ shape: [], sign: "NONNEGATIVE", curvature: "CONVEX", is_dcp: true }}
+      />
+    );
+
+    expect(html).toContain("norm");
+    expect(html).toContain("(x, p=2, axis=None)");
+    expect(html).toContain("x");
+    expect(html).toContain("p");
+    expect(html).toContain("Output");
+    expect(html).toContain("CONVEX");
+    expect(html).toContain("DCP");
   });
 });
 
@@ -275,6 +554,12 @@ describe("Atlas card model", () => {
             source: "evaluate"
           }
         ]}
+        metadata={{
+          shape: [],
+          sign: "NONNEGATIVE",
+          curvature: "CONVEX",
+          is_dcp: true
+        }}
         selected
         highlighted
         onPointerDown={() => undefined}
@@ -289,6 +574,10 @@ describe("Atlas card model", () => {
     expect(html).toContain("product");
     expect(html).toContain("unit_cost");
     expect(html).toContain("12");
+    expect(html).toContain("shape");
+    expect(html).toContain("scalar");
+    expect(html).toContain("convex");
+    expect(html).toContain("DCP ok");
     expect(html).toContain("price");
     expect(html).toContain("value");
     expect(html).toContain("data-card-id=\"card-function\"");
@@ -1464,9 +1753,112 @@ describe("Atlas card model", () => {
     const state = addAtlasCard(emptyAtlasState(), "object", "product-card");
     const ir = exportAtlasIR(state, { exportedAt: "2026-01-01T00:00:00.000Z" });
 
-    expect(ir.schemaVersion).toBe("0.1");
+    expect(ir.schemaVersion).toBe("0.2-cvxpy");
+    expect(ir.metadata.schemaVersion).toBe("0.2-cvxpy");
     expect(ir.metadata.source).toBe("atlas-gui");
-    expect(serializeAtlasIR(ir)).toContain('"schemaVersion": "0.1"');
+    expect(ir.modelObjects.constants[0]?.id).toBe("product-card");
+    expect(ir.workspaceNodes[0]?.modelObjectId).toBe("product-card");
+    expect(serializeAtlasIR(ir)).toContain('"modelObjects"');
+  });
+
+  it("allows two workspace nodes to reference one canonical variable", () => {
+    const state = addAtlasCard(emptyAtlasState(), "decision", "decision-x");
+    const ir = exportAtlasIR(state, { exportedAt: "2026-01-01T00:00:00.000Z" });
+    const withReference = addWorkspaceReferenceToIR(ir, {
+      modelObjectId: "decision-x",
+      modelObjectKind: "variable",
+      position: { x: 320, y: 120 },
+      displayState: { title: "x reference", collapsed: true }
+    });
+
+    expect(withReference.modelObjects.variables).toHaveLength(1);
+    expect(
+      withReference.workspaceNodes.filter((node) => node.modelObjectId === "decision-x")
+    ).toHaveLength(2);
+    expect(validateCvxpyFirstIR(withReference)).toEqual([]);
+  });
+
+  it("deletes a workspace reference without deleting the canonical variable", () => {
+    const state = addAtlasCard(emptyAtlasState(), "decision", "decision-x");
+    const ir = addWorkspaceReferenceToIR(exportAtlasIR(state), {
+      id: "node-x-secondary",
+      modelObjectId: "decision-x",
+      modelObjectKind: "variable",
+      position: { x: 500, y: 100 },
+      displayState: { title: "x secondary" }
+    });
+    const updated = deleteWorkspaceNodeFromIR(ir, "node-x-secondary");
+
+    expect(updated.modelObjects.variables.map((variable) => variable.id)).toEqual(["decision-x"]);
+    expect(updated.workspaceNodes.map((node) => node.id)).toEqual(["decision-x"]);
+  });
+
+  it("validates missing workspace model object references", () => {
+    const ir = exportAtlasIR(emptyAtlasState());
+
+    expect(
+      validateCvxpyFirstIR({
+        ...ir,
+        workspaceNodes: [
+          {
+            id: "node-missing",
+            modelObjectId: "missing-variable",
+            modelObjectKind: "variable",
+            position: { x: 0, y: 0 },
+            displayState: {}
+          }
+        ]
+      })
+    ).toEqual([
+      'Workspace node "node-missing" references missing model object "missing-variable".'
+    ]);
+  });
+
+  it("imports pure workspace-node IR without duplicating canonical variables", () => {
+    const imported = importAtlasIR({
+      schemaVersion: "0.2-cvxpy",
+      metadata: {
+        schemaVersion: "0.2-cvxpy",
+        source: "atlas-gui",
+        title: "Pure IR",
+        exportedAt: "2026-01-01T00:00:00.000Z"
+      },
+      modelObjects: {
+        variables: [{ id: "var-x", kind: "variable", name: "x" }],
+        parameters: [],
+        constants: [],
+        atoms: [],
+        expressions: [],
+        constraints: [],
+        objectives: [],
+        problems: [],
+        solvers: [],
+        results: [],
+        workspaceReferences: []
+      },
+      workspaceNodes: [
+        {
+          id: "node-x-a",
+          modelObjectId: "var-x",
+          modelObjectKind: "variable",
+          position: { x: 10, y: 10 },
+          displayState: { title: "x", workspaceRole: "definition" }
+        },
+        {
+          id: "node-x-b",
+          modelObjectId: "var-x",
+          modelObjectKind: "variable",
+          position: { x: 300, y: 10 },
+          displayState: { title: "x", workspaceRole: "reference" }
+        }
+      ],
+      connections: []
+    });
+
+    expect(imported.diagnostics).toEqual([]);
+    expect(imported.state.cards).toHaveLength(2);
+    expect(getCanonicalModelObjects(imported.state)).toHaveLength(1);
+    expect(imported.state.cards.map((card) => card.modelObjectId)).toEqual(["var-x", "var-x"]);
   });
 
   it("roundtrips Atlas IR cards, queries, groups, objectives, constraints, and layout", () => {
@@ -1669,24 +2061,38 @@ describe("Atlas card model", () => {
       calls.push(String(input));
       return {
         ok: true,
-        json: async () => ({ status: "ok", diagnostics: [] })
+        json: async () => ({
+          status: "ok",
+          diagnostics: [],
+          metadata: {
+            "node-x": {
+              shape: [],
+              sign: "UNKNOWN",
+              curvature: "AFFINE",
+              is_dcp: true
+            }
+          }
+        })
       } as Response;
     }) as typeof fetch;
 
     const ir = exportAtlasIR(emptyAtlasState(), { exportedAt: "2026-01-01T00:00:00.000Z" });
     await checkAtlasBackendHealth("http://backend.test");
-    await validateAtlasModel(ir, "http://backend.test");
+    const validation = await validateAtlasModel(ir, "http://backend.test");
     await evaluateAtlasModel(ir, "http://backend.test");
     await generateAtlasCode(ir, "http://backend.test");
     await solveAtlasModel(ir, "http://backend.test");
+    await fetchCvxpyAtoms("http://backend.test");
 
     globalThis.fetch = originalFetch;
+    expect(validation.metadata?.["node-x"]?.curvature).toBe("AFFINE");
     expect(calls).toEqual([
       "http://backend.test/health",
       "http://backend.test/validate",
       "http://backend.test/evaluate",
       "http://backend.test/generate_code",
-      "http://backend.test/solve"
+      "http://backend.test/solve",
+      "http://backend.test/cvxpy/atoms"
     ]);
   });
 });
@@ -1718,7 +2124,6 @@ describe("Atlas search and commands", () => {
         "create:function",
         "create:constraint",
         "create:objective",
-        "template:product-like-object",
         "loadExample",
         "saveProject",
         "export",
@@ -1727,8 +2132,7 @@ describe("Atlas search and commands", () => {
       ])
     );
     expect(filterAtlasCommands(commands, "solve").map((command) => command.id)).toContain("solve");
-    expect(filterAtlasCommands(commands, "product").map((command) => command.id)).toContain(
-      "template:product-like-object"
-    );
+    expect(filterAtlasCommands(commands, "cvxpy").map((command) => command.id)).toContain("loadExample");
+    expect(commands.map((command) => command.id)).not.toContain("template:product-like-object");
   });
 });

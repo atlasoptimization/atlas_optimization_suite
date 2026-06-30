@@ -22,13 +22,15 @@ export type AtlasCommand = {
 };
 
 const CARD_TYPE_LABELS: Record<AtlasCardType, string> = {
-  object: "Object",
-  decision: "Decision",
-  data: "Data",
-  function: "Function",
+  object: "Constant",
+  decision: "Variable",
+  data: "Parameter",
+  function: "Atom / Expression",
   constraint: "Constraint",
   objective: "Objective"
 };
+
+const CVXPY_FIRST_HIDDEN_TEMPLATE_IDS = new Set(["product-like-object"]);
 
 export function searchAtlasCards(cards: AtlasCard[], query: string): AtlasSearchResult[] {
   const normalizedQuery = normalizeSearchText(query);
@@ -49,19 +51,21 @@ export function createAtlasCommands(templates: AtlasCardTemplate[]): AtlasComman
     label: `Create ${CARD_TYPE_LABELS[cardType]} card`,
     keywords: ["create", "card", cardType, CARD_TYPE_LABELS[cardType]]
   }));
-  const templateCommands = templates.map((template) => ({
-    id: `template:${template.id}` as const,
-    label: `Create from template: ${template.name}`,
-    keywords: ["create", "template", template.name, template.cardType, template.description]
-  }));
+  const templateCommands = templates
+    .filter((template) => !CVXPY_FIRST_HIDDEN_TEMPLATE_IDS.has(template.id))
+    .map((template) => ({
+      id: `template:${template.id}` as const,
+      label: `Create from template: ${template.name}`,
+      keywords: ["create", "template", template.name, template.cardType, template.description]
+    }));
 
   return [
     ...createCommands,
     ...templateCommands,
     {
       id: "loadExample",
-      label: "Load production planning example",
-      keywords: ["load", "example", "production", "planning"]
+      label: "Load linear CVXPY example",
+      keywords: ["load", "example", "linear", "cvxpy", "solve"]
     },
     { id: "saveProject", label: "Save project JSON", keywords: ["save", "project", "json"] },
     { id: "export", label: "Export Atlas IR", keywords: ["export", "ir", "json"] },

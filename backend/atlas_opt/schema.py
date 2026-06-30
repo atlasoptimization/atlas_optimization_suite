@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 CardType = Literal["object", "decision", "data", "function", "constraint", "objective"]
@@ -14,6 +14,19 @@ FunctionKind = Literal["tagged_sum"]
 ObjectiveDirection = Literal["minimize", "maximize"]
 ConstraintOperator = Literal["<=", ">=", "=", "=="]
 ConstraintExpressionKind = Literal["constant", "function_ref"]
+ModelObjectKind = Literal[
+    "variable",
+    "parameter",
+    "constant",
+    "atom",
+    "expression",
+    "constraint",
+    "objective",
+    "problem",
+    "solver",
+    "result",
+    "workspace_reference",
+]
 
 
 class AtlasBaseModel(BaseModel):
@@ -164,6 +177,180 @@ class DiagnosticIR(AtlasBaseModel):
     sourceId: str | None = None
 
 
+class ModelObjectBaseIR(AtlasBaseModel):
+    """Canonical mathematical object independent from visual workspace placement."""
+
+    id: str = Field(min_length=1)
+    kind: ModelObjectKind
+    name: str = Field(default="Object", min_length=1)
+    notes: str | None = None
+    sourceCardId: str | None = None
+
+
+class VariableObjectIR(ModelObjectBaseIR):
+    """Canonical CVXPY variable object."""
+
+    kind: Literal["variable"] = "variable"
+    decision: DecisionIR | None = None
+
+
+class ParameterObjectIR(ModelObjectBaseIR):
+    """Canonical CVXPY parameter/input object."""
+
+    kind: Literal["parameter"] = "parameter"
+    data: dict[str, Any] | None = None
+
+
+class ConstantObjectIR(ModelObjectBaseIR):
+    """Canonical CVXPY constant object."""
+
+    kind: Literal["constant"] = "constant"
+    value: Any | None = None
+    properties: list[PropertyIR] = Field(default_factory=list)
+
+
+class AtomObjectIR(ModelObjectBaseIR):
+    """Canonical CVXPY atom/expression-call object."""
+
+    kind: Literal["atom"] = "atom"
+    atomId: str | None = None
+    atomName: str | None = None
+    importPath: str | None = None
+    displayName: str | None = None
+    positionalInputs: list[dict[str, Any]] = Field(default_factory=list)
+    keywordInputs: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    outputName: str | None = None
+    metadata: dict[str, Any] | None = None
+    uiOverrides: dict[str, Any] | None = None
+    atomSpec: dict[str, Any] | None = None
+    taggedSum: FunctionConfigIR | None = None
+
+
+class ExpressionObjectIR(ModelObjectBaseIR):
+    """Canonical expression object."""
+
+    kind: Literal["expression"] = "expression"
+    expression: dict[str, Any] | None = None
+
+
+class ConstraintObjectIR(ModelObjectBaseIR):
+    """Canonical constraint object."""
+
+    kind: Literal["constraint"] = "constraint"
+    constraint: ConstraintIR | None = None
+
+
+class ObjectiveObjectIR(ModelObjectBaseIR):
+    """Canonical objective object."""
+
+    kind: Literal["objective"] = "objective"
+    objective: ObjectiveIR | None = None
+
+
+class ProblemObjectIR(ModelObjectBaseIR):
+    """Canonical CVXPY problem object."""
+
+    kind: Literal["problem"] = "problem"
+    objectiveIds: list[str] = Field(default_factory=list)
+    constraintIds: list[str] = Field(default_factory=list)
+
+
+class SolverObjectIR(ModelObjectBaseIR):
+    """Canonical solver configuration object."""
+
+    kind: Literal["solver"] = "solver"
+    solverName: str | None = None
+    options: dict[str, Any] = Field(default_factory=dict)
+
+
+class ResultObjectIR(ModelObjectBaseIR):
+    """Canonical result object."""
+
+    kind: Literal["result"] = "result"
+    status: str | None = None
+    value: Any | None = None
+
+
+class WorkspaceReferenceObjectIR(ModelObjectBaseIR):
+    """Canonical reference object that points at another canonical object."""
+
+    kind: Literal["workspace_reference"] = "workspace_reference"
+    targetObjectId: str = Field(min_length=1)
+    targetObjectKind: ModelObjectKind
+
+
+class ModelObjectsIR(AtlasBaseModel):
+    """Canonical model-object registry grouped by kind."""
+
+    variables: list[VariableObjectIR] = Field(default_factory=list)
+    parameters: list[ParameterObjectIR] = Field(default_factory=list)
+    constants: list[ConstantObjectIR] = Field(default_factory=list)
+    atoms: list[AtomObjectIR] = Field(default_factory=list)
+    expressions: list[ExpressionObjectIR] = Field(default_factory=list)
+    constraints: list[ConstraintObjectIR] = Field(default_factory=list)
+    objectives: list[ObjectiveObjectIR] = Field(default_factory=list)
+    problems: list[ProblemObjectIR] = Field(default_factory=list)
+    solvers: list[SolverObjectIR] = Field(default_factory=list)
+    results: list[ResultObjectIR] = Field(default_factory=list)
+    workspaceReferences: list[WorkspaceReferenceObjectIR] = Field(default_factory=list)
+
+    def all_objects(self) -> list[ModelObjectBaseIR]:
+        """Return all canonical objects in deterministic registry order."""
+
+        return [
+            *self.variables,
+            *self.parameters,
+            *self.constants,
+            *self.atoms,
+            *self.expressions,
+            *self.constraints,
+            *self.objectives,
+            *self.problems,
+            *self.solvers,
+            *self.results,
+            *self.workspaceReferences,
+        ]
+
+
+class WorkspaceNodeIR(AtlasBaseModel):
+    """Visual placement of a canonical model object."""
+
+    id: str = Field(min_length=1)
+    modelObjectId: str = Field(min_length=1)
+    modelObjectKind: ModelObjectKind
+    position: PositionIR = Field(default_factory=PositionIR)
+    size: SizeIR | None = None
+    displayState: dict[str, Any] = Field(default_factory=dict)
+    style: dict[str, Any] | None = None
+    expanded: bool | None = None
+    collapsed: bool | None = None
+
+
+class ConnectionEndpointIR(AtlasBaseModel):
+    """Endpoint for a visual or semantic connection."""
+
+    nodeId: str | None = None
+    objectId: str | None = None
+    port: str | None = None
+    slot: str | None = None
+
+
+class ConnectionIR(AtlasBaseModel):
+    """Connection between workspace nodes or canonical model objects."""
+
+    id: str = Field(min_length=1)
+    source: ConnectionEndpointIR
+    target: ConnectionEndpointIR
+    semanticReference: dict[str, Any] | None = None
+
+
+class ViewsIR(AtlasBaseModel):
+    """Optional UI layout state that does not define mathematics."""
+
+    groups: list["GroupIR"] = Field(default_factory=list)
+    selectedNodeId: str | None = None
+
+
 class CardIR(AtlasBaseModel):
     """Raw card record from the Atlas workbench."""
 
@@ -197,21 +384,77 @@ class GroupIR(AtlasBaseModel):
 class MetadataIR(AtlasBaseModel):
     """Top-level Atlas IR metadata."""
 
+    schemaVersion: str = "0.2-cvxpy"
+    title: str | None = None
     name: str | None = None
     createdAt: str | None = None
     updatedAt: str | None = None
+    exportedAt: str | None = None
     source: str | None = "atlas-gui"
 
 
 class AtlasIR(AtlasBaseModel):
     """Top-level raw Atlas IR document."""
 
-    schemaVersion: str = "0.1"
+    schemaVersion: str = "0.2-cvxpy"
     metadata: MetadataIR = Field(default_factory=MetadataIR)
+    modelObjects: ModelObjectsIR = Field(default_factory=ModelObjectsIR)
+    workspaceNodes: list[WorkspaceNodeIR] = Field(default_factory=list)
+    connections: list[ConnectionIR] = Field(default_factory=list)
+    views: ViewsIR | None = None
+    future: dict[str, Any] = Field(default_factory=dict)
     cards: list[CardIR] = Field(default_factory=list)
     queries: list[QueryIR] = Field(default_factory=list)
     groups: list[GroupIR] = Field(default_factory=list)
     diagnostics: list[DiagnosticIR] = Field(default_factory=list)
 
+    @model_validator(mode="after")
+    def validate_cvxpy_first_references(self) -> "AtlasIR":
+        """Validate canonical object and workspace reference integrity."""
+
+        object_ids: set[str] = set()
+        for model_object in self.modelObjects.all_objects():
+            if model_object.id in object_ids:
+                raise ValueError(f'Duplicate model object id "{model_object.id}".')
+            object_ids.add(model_object.id)
+
+        node_ids: set[str] = set()
+        for node in self.workspaceNodes:
+            if node.id in node_ids:
+                raise ValueError(f'Duplicate workspace node id "{node.id}".')
+            node_ids.add(node.id)
+            if node.modelObjectId not in object_ids:
+                raise ValueError(
+                    f'Workspace node "{node.id}" references missing model object "{node.modelObjectId}".'
+                )
+
+        for connection in self.connections:
+            validate_endpoint(connection.id, "source", connection.source, node_ids, object_ids)
+            validate_endpoint(connection.id, "target", connection.target, node_ids, object_ids)
+
+        return self
+
 
 ExpressionIR.model_rebuild()
+ViewsIR.model_rebuild()
+
+
+def validate_endpoint(
+    connection_id: str,
+    side: str,
+    endpoint: ConnectionEndpointIR,
+    node_ids: set[str],
+    object_ids: set[str],
+) -> None:
+    """Raise if a connection endpoint points at a missing node/object."""
+
+    if not endpoint.nodeId and not endpoint.objectId:
+        raise ValueError(f'Connection "{connection_id}" {side} must reference a node or model object.')
+    if endpoint.nodeId and endpoint.nodeId not in node_ids:
+        raise ValueError(
+            f'Connection "{connection_id}" {side} references missing workspace node "{endpoint.nodeId}".'
+        )
+    if endpoint.objectId and endpoint.objectId not in object_ids:
+        raise ValueError(
+            f'Connection "{connection_id}" {side} references missing model object "{endpoint.objectId}".'
+        )

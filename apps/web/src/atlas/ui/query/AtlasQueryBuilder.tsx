@@ -102,7 +102,7 @@ export function AtlasQueryBuilder({
 
       {!selectedQuery ? (
         <p className="atlas-muted">
-          Create a named query to select cards by typed tags such as type=product.
+          Create a named query to select workspace nodes by typed metadata such as role=variable.
         </p>
       ) : (
         <div className="atlas-query-editor">

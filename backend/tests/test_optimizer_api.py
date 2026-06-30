@@ -390,6 +390,10 @@ def test_fastapi_endpoints_if_fastapi_is_installed() -> None:
 
     solve_response = client.post("/solve", json=minimal_ir())
     assert solve_response.status_code == 200
+
+    atoms_response = client.get("/cvxpy/atoms")
+    assert atoms_response.status_code == 200
+    assert atoms_response.json()["atoms"]
     assert "status" in solve_response.json()
 
     invalid_response = client.post("/validate", json={"cards": [{"type": "object"}]})

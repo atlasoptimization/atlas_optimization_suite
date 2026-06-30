@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { parseAtlasCsv } from "../../core/csv";
+import type { AtlasCvxpyObjectMetadata } from "../../api/backendClient";
 import {
   ATLAS_CONSTRAINT_OPERATORS,
   constraintPreview,
@@ -37,6 +38,7 @@ import type { AtlasRuntimeDiagnostic } from "../../core/runtimeDiagnostics";
 import {
   ATLAS_PROPERTY_KINDS,
   type AtlasCard,
+  type AtlasAtomInput,
   type AtlasCardModule,
   type AtlasCardQuery,
   type AtlasConstraintConfig,
@@ -59,6 +61,7 @@ type AtlasInspectorProps = {
   solutionEvaluationWarning?: string | null;
   selectedRuntimeDiagnostic?: AtlasRuntimeDiagnostic | null;
   symbolicPreview: AtlasSymbolicPreview | null;
+  cvxpyMetadata?: AtlasCvxpyObjectMetadata | null;
   dependencyHighlightEnabled: boolean;
   onAddTag: (cardId: string, key: string, value: string) => void;
   onUpdateTag: (cardId: string, tagId: string, key: string, value: string) => void;
@@ -84,6 +87,12 @@ type AtlasInspectorProps = {
   ) => void;
   onDeleteModule: (cardId: string, moduleId: string) => void;
   onUpdateTaggedSum: (cardId: string, patch: Partial<AtlasTaggedSumConfig>) => void;
+  onUpdateAtomInput: (
+    cardId: string,
+    inputKind: "positional" | "keyword",
+    inputId: string,
+    patch: Partial<AtlasAtomInput>
+  ) => void;
   onUpdateObjective: (cardId: string, patch: Partial<Pick<AtlasObjectiveConfig, "direction">>) => void;
   onAddObjectiveTerm: (cardId: string, functionCardId?: string | null) => void;
   onUpdateObjectiveTerm: (
@@ -153,6 +162,7 @@ export function AtlasInspector({
   solutionEvaluationWarning,
   selectedRuntimeDiagnostic,
   symbolicPreview,
+  cvxpyMetadata,
   dependencyHighlightEnabled,
   onAddTag,
   onUpdateTag,
@@ -164,6 +174,7 @@ export function AtlasInspector({
   onUpdateModule,
   onDeleteModule,
   onUpdateTaggedSum,
+  onUpdateAtomInput,
   onUpdateObjective,
   onAddObjectiveTerm,
   onUpdateObjectiveTerm,
@@ -458,6 +469,56 @@ export function AtlasInspector({
           <dd>{card.notes || "No notes yet."}</dd>
         </div>
       </dl>
+
+      {card.atomSpec && (
+        <section className="atlas-status-box" aria-label="CVXPY atom metadata">
+          <span>CVXPY atom</span>
+          <p>
+            <strong>{card.atomSpec.importPath}</strong> {card.atomSpec.signature}
+          </p>
+          {card.atomSpec.doc && <p>{card.atomSpec.doc}</p>}
+        </section>
+      )}
+
+      {card.atomConfig && (
+        <AtomInputEditor card={card} onUpdateAtomInput={onUpdateAtomInput} />
+      )}
+
+      {cvxpyMetadata && (
+        <section className="atlas-evaluation-panel" aria-label="CVXPY validation metadata">
+          <header>
+            <h3>CVXPY Metadata</h3>
+          </header>
+          <dl className="atlas-placeholder-list">
+            <div>
+              <dt>Shape</dt>
+              <dd>{formatCvxpyShape(cvxpyMetadata.shape)}</dd>
+            </div>
+            <div>
+              <dt>Sign</dt>
+              <dd>{cvxpyMetadata.sign ?? "unknown"}</dd>
+            </div>
+            <div>
+              <dt>Curvature</dt>
+              <dd>{cvxpyMetadata.curvature ?? "unknown"}</dd>
+            </div>
+            <div>
+              <dt>DCP</dt>
+              <dd>{formatCvxpyBoolean(cvxpyMetadata.is_dcp)}</dd>
+            </div>
+            <div>
+              <dt>DGP</dt>
+              <dd>{formatCvxpyBoolean(cvxpyMetadata.is_dgp)}</dd>
+            </div>
+            {cvxpyMetadata.value !== undefined && cvxpyMetadata.value !== null && (
+              <div>
+                <dt>Value</dt>
+                <dd>{String(cvxpyMetadata.value)}</dd>
+              </div>
+            )}
+          </dl>
+        </section>
+      )}
 
       <EvaluationPanel
         entry={evaluationEntry}
@@ -1839,6 +1900,100 @@ function DependencyListSummary({
   );
 }
 
+function AtomInputEditor({
+  card,
+  onUpdateAtomInput
+}: {
+  card: AtlasCard;
+  onUpdateAtomInput: (
+    cardId: string,
+    inputKind: "positional" | "keyword",
+    inputId: string,
+    patch: Partial<AtlasAtomInput>
+  ) => void;
+}) {
+  if (!card.atomConfig) return null;
+  const keywordInputs = Object.entries(card.atomConfig.keywordInputs);
+  return (
+    <section className="atlas-function-editor" aria-label="Generic atom input editor">
+      <header>
+        <h3>Atom Inputs</h3>
+        <p>{card.atomConfig.displayName} {card.atomConfig.signature}</p>
+      </header>
+      <div className="atlas-tag-editor">
+        {card.atomConfig.positionalInputs.map((input, index) => (
+          <AtomInputRow
+            key={input.id}
+            label={`arg ${index + 1}: ${input.name}`}
+            input={input}
+            onChange={(patch) => onUpdateAtomInput(card.id, "positional", input.id, patch)}
+          />
+        ))}
+        {keywordInputs.map(([name, input]) => (
+          <AtomInputRow
+            key={input.id}
+            label={`keyword: ${name}`}
+            input={input}
+            onChange={(patch) => onUpdateAtomInput(card.id, "keyword", input.id, patch)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AtomInputRow({
+  label,
+  input,
+  onChange
+}: {
+  label: string;
+  input: AtlasAtomInput;
+  onChange: (patch: Partial<AtlasAtomInput>) => void;
+}) {
+  return (
+    <div className="atlas-tag-row">
+      <label>
+        <span>{label}</span>
+        <select
+          value={input.kind}
+          onChange={(event) => onChange({ kind: event.currentTarget.value === "literal" ? "literal" : "reference" })}
+        >
+          <option value="reference">Reference</option>
+          <option value="literal">Literal</option>
+        </select>
+      </label>
+      {input.kind === "literal" ? (
+        <label>
+          <span>Value</span>
+          <input
+            value={input.value === null || input.value === undefined ? "" : String(input.value)}
+            onChange={(event) => onChange({ value: parseAtomLiteralDraft(event.currentTarget.value) })}
+          />
+        </label>
+      ) : (
+        <label>
+          <span>Object id</span>
+          <input
+            value={input.objectId ?? ""}
+            placeholder="Connect on canvas or enter object id"
+            onChange={(event) => onChange({ objectId: event.currentTarget.value.trim() || undefined })}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
+function parseAtomLiteralDraft(value: string) {
+  if (!value.trim()) return "";
+  if (value === "true") return true;
+  if (value === "false") return false;
+  if (value === "null" || value === "None") return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : value;
+}
+
 function propertyToDraft(property: AtlasProperty): PropertyDraft {
   return {
     name: property.name,
@@ -1853,6 +2008,18 @@ function propertyToDraft(property: AtlasProperty): PropertyDraft {
     unit: property.unit ?? "",
     notes: property.notes ?? ""
   };
+}
+
+function formatCvxpyShape(shape: unknown) {
+  if (Array.isArray(shape)) return shape.length === 0 ? "scalar" : shape.join(" x ");
+  if (shape === undefined || shape === null || shape === "") return "unknown";
+  return String(shape);
+}
+
+function formatCvxpyBoolean(value: boolean | null | undefined) {
+  if (value === true) return "ok";
+  if (value === false) return "error";
+  return "unknown";
 }
 
 function propertyDraftToPayload(draft: PropertyDraft | undefined): EditablePropertyPayload | null {

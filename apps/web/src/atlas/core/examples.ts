@@ -94,6 +94,7 @@ export function createProductionPlanningExample(): AtlasWorkbenchState {
         notes: "Factory A has 40 available machine hours."
       }
     ],
+    connections: [],
     groups: [
       {
         id: "group-factory-a",

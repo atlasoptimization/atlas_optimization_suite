@@ -1,5 +1,6 @@
 import type {
   AtlasCard,
+  AtlasAtomInput,
   AtlasCardType,
   AtlasPosition,
   AtlasProperty,
@@ -16,6 +17,7 @@ export const EMPTY_ATLAS_STATE: AtlasWorkbenchState = {
   cards: [],
   groups: [],
   queries: [],
+  connections: [],
   selectedCardId: null,
   selectedGroupId: null,
   selectedQueryId: null
@@ -28,6 +30,17 @@ const DEFAULT_CARD_TITLES: Record<AtlasCardType, string> = {
   function: "Function",
   constraint: "Constraint",
   objective: "Objective"
+};
+
+const MODEL_KIND_CARD_TYPE: Record<string, AtlasCardType> = {
+  variable: "decision",
+  parameter: "data",
+  constant: "object",
+  atom: "function",
+  expression: "function",
+  constraint: "constraint",
+  objective: "objective",
+  problem: "object"
 };
 
 export function createAtlasCard(
@@ -73,6 +86,143 @@ export function createAtlasCard(
     properties: [],
     notes: ""
   };
+}
+
+export function defineAtlasModelObject(
+  state: AtlasWorkbenchState,
+  objectKind: NonNullable<AtlasCard["modelObjectKind"]>,
+  name: string,
+  shape: "scalar" | "vector" | "matrix" = "scalar",
+  atomSpec?: AtlasCard["atomSpec"],
+  position?: AtlasPosition
+): AtlasWorkbenchState {
+  const cardType = MODEL_KIND_CARD_TYPE[objectKind] ?? "object";
+  const modelObjectId = makeAtlasId(objectKind);
+  const card = createAtlasCard(cardType, {
+    id: `node_${modelObjectId}`,
+    index: state.cards.length,
+    position
+  });
+  const title = name.trim() || defaultModelObjectName(objectKind);
+  const definition: AtlasCard = {
+    ...card,
+    title,
+    modelObjectId,
+    modelObjectKind: objectKind,
+    workspaceRole: "definition",
+    atomSpec,
+    atomConfig: objectKind === "atom" ? createAtomConfig(atomSpec, title) : undefined,
+    notes: `${shape} ${objectKind}`
+  };
+
+  return {
+    ...state,
+    cards: [...state.cards, definition],
+    selectedCardId: definition.id,
+    selectedGroupId: null,
+    selectedQueryId: null
+  };
+}
+
+export function createAtlasWorkspaceReference(
+  state: AtlasWorkbenchState,
+  modelObjectId: string,
+  position?: AtlasPosition
+): AtlasWorkbenchState {
+  const canonical = getCanonicalModelObjects(state).find((object) => object.modelObjectId === modelObjectId);
+  if (!canonical) return state;
+  const canonicalKind = canonical.modelObjectKind ?? cardTypeToModelKind(canonical.type);
+  const cardType = MODEL_KIND_CARD_TYPE[canonicalKind] ?? "object";
+  const reference = createAtlasCard(cardType, {
+    id: makeAtlasId("node"),
+    index: state.cards.length,
+    position: position ?? {
+      x: canonical.position.x + 280,
+      y: canonical.position.y
+    }
+  });
+  const referenceCard: AtlasCard = {
+    ...reference,
+    title: canonical.title,
+    modelObjectId: canonical.modelObjectId,
+    modelObjectKind: canonicalKind,
+    workspaceRole: "reference",
+    tags: canonical.tags.map((tag) => ({ ...tag })),
+    properties: canonical.properties.map((property) => ({ ...property })),
+    decision: canonical.decision ? { ...canonical.decision } : undefined,
+    data: canonical.data ? JSON.parse(JSON.stringify(canonical.data)) : undefined,
+    functionKind: canonical.functionKind,
+    atomSpec: canonical.atomSpec ? JSON.parse(JSON.stringify(canonical.atomSpec)) : undefined,
+    atomConfig: canonical.atomConfig ? JSON.parse(JSON.stringify(canonical.atomConfig)) : undefined,
+    taggedSum: canonical.taggedSum ? JSON.parse(JSON.stringify(canonical.taggedSum)) : undefined,
+    objective: canonical.objective ? JSON.parse(JSON.stringify(canonical.objective)) : undefined,
+    constraint: canonical.constraint ? JSON.parse(JSON.stringify(canonical.constraint)) : undefined,
+    notes: `Workspace reference to ${canonical.title}`
+  };
+
+  return {
+    ...state,
+    cards: [...state.cards, referenceCard],
+    selectedCardId: referenceCard.id,
+    selectedGroupId: null,
+    selectedQueryId: null
+  };
+}
+
+export function updateAtlasAtomInput(
+  state: AtlasWorkbenchState,
+  cardId: string,
+  inputKind: "positional" | "keyword",
+  inputId: string,
+  patch: Partial<AtlasAtomInput>
+): AtlasWorkbenchState {
+  return {
+    ...state,
+    cards: state.cards.map((card) => {
+      if (card.id !== cardId) return card;
+      if (!card.atomConfig) return card;
+      if (inputKind === "positional") {
+        return {
+          ...card,
+          atomConfig: {
+            ...card.atomConfig,
+            positionalInputs: card.atomConfig.positionalInputs.map((input) =>
+              input.id === inputId ? { ...input, ...patch } : input
+            )
+          }
+        };
+      }
+      return {
+        ...card,
+        atomConfig: {
+          ...card.atomConfig,
+          keywordInputs: Object.fromEntries(
+            Object.entries(card.atomConfig.keywordInputs).map(([name, input]) => [
+              name,
+              input.id === inputId || name === inputId ? { ...input, ...patch } : input
+            ])
+          )
+        }
+      };
+    })
+  };
+}
+
+export function getCanonicalModelObjects(state: AtlasWorkbenchState): AtlasCard[] {
+  const seen = new Set<string>();
+  const canonical: AtlasCard[] = [];
+  for (const card of state.cards) {
+    const modelObjectId = card.modelObjectId ?? card.id;
+    if (seen.has(modelObjectId)) continue;
+    seen.add(modelObjectId);
+    canonical.push({
+      ...card,
+      modelObjectId,
+      modelObjectKind: card.modelObjectKind ?? cardTypeToModelKind(card.type),
+      workspaceRole: card.workspaceRole ?? "definition"
+    });
+  }
+  return canonical;
 }
 
 export function addAtlasCard(
@@ -159,6 +309,9 @@ export function deleteAtlasCard(state: AtlasWorkbenchState, cardId: string): Atl
   return {
     ...state,
     cards: state.cards.filter((card) => card.id !== cardId),
+    connections: (state.connections ?? []).filter(
+      (connection) => connection.source.nodeId !== cardId && connection.target.nodeId !== cardId
+    ),
     selectedCardId: state.selectedCardId === cardId ? null : state.selectedCardId
   };
 }
@@ -324,6 +477,66 @@ export function deleteAtlasProperty(
 function optionalText(value: string | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function cardTypeToModelKind(cardType: AtlasCardType): NonNullable<AtlasCard["modelObjectKind"]> {
+  if (cardType === "decision") return "variable";
+  if (cardType === "data") return "parameter";
+  if (cardType === "object") return "constant";
+  if (cardType === "function") return "atom";
+  return cardType;
+}
+
+function defaultModelObjectName(kind: string) {
+  if (kind === "variable") return "x";
+  if (kind === "parameter") return "p";
+  if (kind === "constant") return "c";
+  if (kind === "atom") return "atom";
+  return kind;
+}
+
+function createAtomConfig(atomSpec: AtlasCard["atomSpec"], fallbackName: string): AtlasCard["atomConfig"] {
+  const atomName = atomSpec?.name ?? fallbackName;
+  const defaultValues = atomSpec?.defaultValues ?? {};
+  const argumentNames = atomSpec?.argumentNames?.length ? atomSpec.argumentNames : ["arg0", "arg1"];
+  const positionalInputs: AtlasAtomInput[] = [];
+  const keywordInputs: Record<string, AtlasAtomInput> = {};
+  for (const name of argumentNames) {
+    if (name in defaultValues) {
+      keywordInputs[name] = {
+        id: `kw_${name}`,
+        name,
+        kind: "literal",
+        value: parseAtomDefault(defaultValues[name])
+      };
+    } else {
+      positionalInputs.push({
+        id: `arg_${positionalInputs.length}`,
+        name,
+        kind: "reference"
+      });
+    }
+  }
+  return {
+    atomName,
+    importPath: atomSpec?.importPath ?? `cvxpy.${atomName}`,
+    displayName: atomSpec?.name ?? fallbackName,
+    signature: atomSpec?.signature ?? "(*args)",
+    positionalInputs,
+    keywordInputs,
+    outputName: "expression",
+    metadata: atomSpec ? JSON.parse(JSON.stringify(atomSpec)) : undefined
+  };
+}
+
+function parseAtomDefault(value: string | undefined) {
+  if (value === undefined) return null;
+  if (value === "None") return null;
+  if (value === "True") return true;
+  if (value === "False") return false;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) return numeric;
+  return value.replace(/^['"]|['"]$/g, "");
 }
 
 function makeAtlasId(prefix: string) {

@@ -7,6 +7,7 @@ from typing import Any
 
 from .desk import AtlasDesk
 from .cvxpy_backend import generate_cvxpy_code, solve_problem
+from .cvxpy_inspector import inspect_cvxpy_metadata
 from .diagnostics import Diagnostic
 from .reports import Report
 from .schema import AtlasIR
@@ -25,9 +26,14 @@ class AtlasOptimizer:
         return cls(AtlasDesk.from_ir(raw_ir))
 
     def validate(self) -> dict[str, Any]:
-        """Return desk diagnostics without solving."""
+        """Return desk diagnostics plus CVXPY metadata inspection without solving."""
 
-        return {"diagnostics": serialize_diagnostics(self.desk.diagnostics)}
+        inspection = inspect_cvxpy_metadata(self.desk.source_ir) if self.desk.source_ir is not None else None
+        inspection_diagnostics = inspection.diagnostics if inspection is not None else []
+        return {
+            "diagnostics": serialize_diagnostics([*self.desk.diagnostics, *inspection_diagnostics]),
+            "metadata": inspection.metadata if inspection is not None else {},
+        }
 
     def evaluate(self) -> dict[str, Any]:
         """Evaluate semantic functions, objectives, constraints, KPIs, and report summary."""

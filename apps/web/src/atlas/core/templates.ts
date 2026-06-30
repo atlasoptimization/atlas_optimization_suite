@@ -12,27 +12,27 @@ export type AtlasCardTemplate = {
 export const ATLAS_CARD_TEMPLATES: AtlasCardTemplate[] = [
   {
     id: "generic-object",
-    name: "Generic Object",
+    name: "Generic Constant",
     cardType: "object",
     defaultTags: [{ key: "type", value: "object" }],
     defaultProperties: [],
-    description: "A generic modeling object with no predefined properties."
+    description: "A scalar or structured constant placeholder for CVXPY expressions."
   },
   {
     id: "generic-decision",
-    name: "Generic Decision",
+    name: "Generic Variable",
     cardType: "decision",
     defaultTags: [{ key: "type", value: "decision" }],
     defaultProperties: [],
-    description: "A placeholder for a future decision variable or choice."
+    description: "A CVXPY variable placeholder with editable scalar metadata."
   },
   {
     id: "generic-data-source",
-    name: "Generic Data Source",
+    name: "Generic Parameter",
     cardType: "data",
     defaultTags: [{ key: "type", value: "data" }],
     defaultProperties: [],
-    description: "A generic data source or input reference."
+    description: "A CVXPY parameter or external input reference."
   },
   {
     id: "index-set",
@@ -44,11 +44,11 @@ export const ATLAS_CARD_TEMPLATES: AtlasCardTemplate[] = [
   },
   {
     id: "generic-function",
-    name: "Generic Function",
+    name: "Generic Atom / Expression",
     cardType: "function",
     defaultTags: [{ key: "type", value: "function" }],
     defaultProperties: [],
-    description: "A generic function card to configure later."
+    description: "A generic expression node; CVXPY atoms should come from backend metadata."
   },
   {
     id: "generic-constraint",

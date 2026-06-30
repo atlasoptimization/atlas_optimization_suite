@@ -1,5 +1,11 @@
 # Atlas Optimization Suite Prototype Plan
 
+## Current Architecture Reorientation
+
+As of Batch A / Prompt 1, Atlas is being reoriented toward a CVXPY-first GUI architecture. The core workbench should expose structural optimization objects first: Variable, Parameter, Constant, Constraint, Objective, Problem, Solver, Result, and Workspace Reference. CVXPY atoms/functions should be discovered by the Python backend from the installed CVXPY package and exposed to the frontend as generic metadata-driven `AtomSpec` records instead of being manually hard-coded one by one in React.
+
+The earlier Product/Factory/Trait/TaggedSum work remains in the repository as compatibility code and as experiments for future macro layers, but it is no longer the core product architecture. High-level semantic objects should eventually compile down to the CVXPY-first IR described in `docs/cvxpy_first_architecture.md`.
+
 ## Current Repository Audit
 
 This repository is currently the Data Science Deck app. It is a pnpm workspace with a React/TypeScript Vite frontend in `apps/web`, a shared deck asset package in `packages/deck-assets`, release/deployment scripts in `scripts`, and documentation in `docs`.

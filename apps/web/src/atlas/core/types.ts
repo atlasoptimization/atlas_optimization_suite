@@ -52,6 +52,39 @@ export type AtlasDecisionMetadata = {
   initialValue?: number | null;
 };
 
+export type AtlasAtomMetadata = {
+  name: string;
+  importPath: string;
+  signature: string;
+  argumentNames: string[];
+  defaultValues?: Record<string, string>;
+  doc?: string;
+  category?: string;
+  module?: string;
+  callable?: boolean;
+};
+
+export type AtlasAtomInput = {
+  id: string;
+  name: string;
+  kind: "reference" | "literal";
+  objectId?: string;
+  nodeId?: string;
+  value?: string | number | boolean | null;
+};
+
+export type AtlasAtomConfig = {
+  atomName: string;
+  importPath: string;
+  displayName: string;
+  signature: string;
+  positionalInputs: AtlasAtomInput[];
+  keywordInputs: Record<string, AtlasAtomInput>;
+  outputName?: string;
+  metadata?: Record<string, unknown>;
+  uiOverrides?: Record<string, unknown>;
+};
+
 export type AtlasDataReference = {
   dataCardId: string;
   column: string;
@@ -78,7 +111,23 @@ export type AtlasFunctionKind = (typeof ATLAS_FUNCTION_KINDS)[number];
 export type AtlasCard = {
   id: string;
   type: AtlasCardType;
+  modelObjectId?: string;
+  modelObjectKind?:
+    | "variable"
+    | "parameter"
+    | "constant"
+    | "atom"
+    | "expression"
+    | "constraint"
+    | "objective"
+    | "problem"
+    | "solver"
+    | "result"
+    | "workspace_reference";
+  workspaceRole?: "definition" | "reference";
   functionKind?: AtlasFunctionKind;
+  atomSpec?: AtlasAtomMetadata;
+  atomConfig?: AtlasAtomConfig;
   taggedSum?: AtlasTaggedSumConfig;
   objective?: AtlasObjectiveConfig;
   constraint?: AtlasConstraintConfig;
@@ -165,10 +214,30 @@ export type AtlasConstraintConfig = {
   right: AtlasConstraintExpression;
 };
 
+export type AtlasConnectionEndpoint = {
+  nodeId?: string;
+  objectId?: string;
+  port?: string;
+  slot?: string;
+};
+
+export type AtlasConnection = {
+  id: string;
+  source: AtlasConnectionEndpoint;
+  target: AtlasConnectionEndpoint;
+  semanticReference?: {
+    kind: string;
+    objectId?: string;
+    propertyName?: string;
+    [key: string]: unknown;
+  };
+};
+
 export type AtlasWorkbenchState = {
   cards: AtlasCard[];
   groups: AtlasGroup[];
   queries: AtlasCardQuery[];
+  connections: AtlasConnection[];
   selectedCardId: string | null;
   selectedGroupId: string | null;
   selectedQueryId: string | null;
@@ -177,8 +246,13 @@ export type AtlasWorkbenchState = {
 export type AtlasAction =
   | { type: "card.create"; cardType: AtlasCardType }
   | { type: "card.createFromTemplate"; templateId: string }
+  | { type: "modelObject.define"; objectKind: "variable" | "parameter" | "constant" | "atom" | "constraint" | "objective" | "problem"; name: string; shape?: "scalar" | "vector" | "matrix"; atomSpec?: AtlasAtomMetadata; position?: AtlasPosition }
+  | { type: "workspaceReference.create"; modelObjectId: string; position?: AtlasPosition }
+  | { type: "connection.create"; source: AtlasConnectionEndpoint; target: AtlasConnectionEndpoint; semanticKind?: string }
+  | { type: "connection.delete"; connectionId: string }
   | { type: "card.select"; cardId: string | null }
   | { type: "card.update"; cardId: string; patch: Partial<Pick<AtlasCard, "title" | "notes" | "decision" | "data">> }
+  | { type: "atom.input.update"; cardId: string; inputKind: "positional" | "keyword"; inputId: string; patch: Partial<AtlasAtomInput> }
   | { type: "card.move"; cardId: string; position: AtlasPosition }
   | { type: "card.delete"; cardId: string }
   | { type: "group.create" }

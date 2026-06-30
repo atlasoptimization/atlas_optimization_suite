@@ -4,10 +4,13 @@ import {
   addAtlasCardFromTemplate,
   addAtlasProperty,
   addAtlasTag,
+  createAtlasWorkspaceReference,
+  defineAtlasModelObject,
   deleteAtlasCard,
   deleteAtlasProperty,
   deleteAtlasTag,
   moveAtlasCard,
+  updateAtlasAtomInput,
   updateAtlasCardDetails,
   updateAtlasProperty,
   updateAtlasTag
@@ -16,6 +19,7 @@ import { addAtlasGroup, deleteAtlasGroup, updateAtlasGroup } from "./groups";
 import { updateTaggedSumConfig } from "./functions";
 import { attachAtlasModule, deleteAtlasModule, updateAtlasModule } from "./modules";
 import { updateConstraintConfig } from "./constraints";
+import { addAtlasConnection, deleteAtlasConnection } from "./connections";
 import {
   addObjectiveTerm,
   moveObjectiveTerm,
@@ -43,6 +47,14 @@ export function atlasReducer(
       return addAtlasCard(state, action.cardType);
     case "card.createFromTemplate":
       return addAtlasCardFromTemplate(state, action.templateId);
+    case "modelObject.define":
+      return defineAtlasModelObject(state, action.objectKind, action.name, action.shape, action.atomSpec, action.position);
+    case "workspaceReference.create":
+      return createAtlasWorkspaceReference(state, action.modelObjectId, action.position);
+    case "connection.create":
+      return addAtlasConnection(state, action.source, action.target, action.semanticKind);
+    case "connection.delete":
+      return deleteAtlasConnection(state, action.connectionId);
     case "card.select":
       return {
         ...state,
@@ -52,6 +64,8 @@ export function atlasReducer(
       };
     case "card.update":
       return updateAtlasCardDetails(state, action.cardId, action.patch);
+    case "atom.input.update":
+      return updateAtlasAtomInput(state, action.cardId, action.inputKind, action.inputId, action.patch);
     case "card.move":
       return moveAtlasCard(state, action.cardId, action.position);
     case "card.delete":

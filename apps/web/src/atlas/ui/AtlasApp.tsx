@@ -2,9 +2,12 @@ import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   checkAtlasBackendHealth,
   evaluateAtlasModel,
+  fetchCvxpyAtoms,
   solveAtlasModel,
-  validateAtlasModel
+  validateAtlasModel,
+  type AtlasCvxpyObjectMetadata
 } from "../api/backendClient";
+import { FALLBACK_ATOM_SPECS, type AtlasAtomSpec } from "../core/atoms";
 import { getSelectedAtlasCard } from "../core/cards";
 import { getConstraintDependencySummary } from "../core/constraints";
 import {
@@ -39,13 +42,14 @@ import {
   upsertRuntimeDiagnostics,
   type AtlasRuntimeDiagnostic
 } from "../core/runtimeDiagnostics";
-import type { AtlasAction, AtlasCardModuleKind, AtlasCardType, AtlasWorkbenchState } from "../core/types";
+import type { AtlasAction, AtlasCardType, AtlasWorkbenchState } from "../core/types";
 import { ATLAS_CARD_TEMPLATES, getAtlasCardTemplate } from "../core/templates";
 import {
   loadAtlasWorkbenchState,
   saveAtlasWorkbenchState
 } from "../storage/localAtlasStorage";
 import { AtlasToolbar, type AtlasToolbarAction } from "./AtlasToolbar";
+import { AtlasConstructorPanel } from "./constructor/AtlasConstructorPanel";
 import { AtlasWorkbench } from "./workbench/AtlasWorkbench";
 import { AtlasInspector } from "./inspector/AtlasInspector";
 import { AtlasModelDock } from "./dock/AtlasModelDock";
@@ -63,7 +67,7 @@ const PLACEHOLDER_ACTION_LABELS: Record<AtlasToolbarAction, string> = {
   import: "Imported Atlas IR JSON.",
   saveProject: "Saved Atlas project JSON.",
   loadProject: "Loaded Atlas project JSON.",
-  loadExample: "Loaded production planning example.",
+  loadExample: "Loaded linear CVXPY example.",
   undo: "Undid the last Atlas workbench change.",
   redo: "Redid the last Atlas workbench change.",
   search: "Search is open.",
@@ -127,6 +131,9 @@ export function AtlasApp() {
   const [evaluationMode, setEvaluationMode] = useState<AtlasEvaluationMode>("current");
   const [backendStatus, setBackendStatus] = useState<"unknown" | "connected" | "unavailable">("unknown");
   const [backendDiagnostics, setBackendDiagnostics] = useState<string[]>([]);
+  const [cvxpyMetadata, setCvxpyMetadata] = useState<Record<string, AtlasCvxpyObjectMetadata>>({});
+  const [atomSpecs, setAtomSpecs] = useState<AtlasAtomSpec[]>(FALLBACK_ATOM_SPECS);
+  const [atomRegistryStatus, setAtomRegistryStatus] = useState("Using fallback CVXPY atom palette.");
   const [solution, setSolution] = useState<AtlasSolutionState>({ status: "empty" });
   const [runtimeDiagnostics, setRuntimeDiagnostics] = useState<AtlasRuntimeDiagnostic[]>([]);
   const [selectedRuntimeDiagnostic, setSelectedRuntimeDiagnostic] = useState<AtlasRuntimeDiagnostic | null>(null);
@@ -253,6 +260,9 @@ export function AtlasApp() {
   const selectedSymbolicPreview = selectedCard
     ? renderCardSymbolicPreview(selectedCard, workbench)
     : null;
+  const selectedCvxpyMetadata = selectedCard
+    ? cvxpyMetadata[selectedCard.id] ?? cvxpyMetadata[selectedCard.modelObjectId ?? ""]
+    : null;
   const solutionWarning =
     evaluationMode === "solution" && isSolutionStale(solution)
       ? "Latest solution is stale because the model changed after solving."
@@ -275,12 +285,27 @@ export function AtlasApp() {
           : current
     );
     setRuntimeDiagnostics(markSolveDiagnosticsStale);
+    setCvxpyMetadata({});
   }, [workbench]);
 
   useEffect(() => {
     checkAtlasBackendHealth()
       .then(() => setBackendStatus("connected"))
       .catch(() => setBackendStatus("unavailable"));
+  }, []);
+
+  useEffect(() => {
+    fetchCvxpyAtoms()
+      .then((response) => {
+        if (response.atoms.length > 0) {
+          setAtomSpecs(response.atoms);
+          setAtomRegistryStatus(`Loaded ${response.atoms.length} atoms from backend registry.`);
+        }
+      })
+      .catch(() => {
+        setAtomSpecs(FALLBACK_ATOM_SPECS);
+        setAtomRegistryStatus("Backend atom registry unavailable; using fallback atoms.");
+      });
   }, []);
 
   useEffect(() => {
@@ -401,6 +426,7 @@ export function AtlasApp() {
         setBackendStatus("connected");
         const diagnostics = response.diagnostics?.map((diagnostic) => diagnostic.message) ?? [];
         setBackendDiagnostics(diagnostics);
+        setCvxpyMetadata(response.metadata ?? {});
         setLastAction(
           diagnostics.length === 0
             ? "Backend validation passed."
@@ -408,6 +434,7 @@ export function AtlasApp() {
         );
       } catch (error) {
         setBackendStatus("unavailable");
+        setCvxpyMetadata({});
         setBackendDiagnostics([error instanceof Error ? error.message : "Backend validation failed."]);
         setLastAction("Backend unavailable; local workbench remains usable.");
       }
@@ -478,10 +505,6 @@ export function AtlasApp() {
     <div className="atlas-app-shell">
       <AtlasToolbar
         onAction={handleToolbarAction}
-        onCreateCard={createCard}
-        onCreateFromTemplate={createCardFromTemplate}
-        onCreateGroup={createGroup}
-        templates={ATLAS_CARD_TEMPLATES}
         canUndo={history.past.length > 0}
         canRedo={history.future.length > 0}
       />
@@ -542,14 +565,34 @@ export function AtlasApp() {
       />
 
       <main className="atlas-main-layout" aria-label="Atlas Optimization Suite workbench">
+        <AtlasConstructorPanel
+          cards={workbench.cards}
+          templates={ATLAS_CARD_TEMPLATES}
+          atomSpecs={atomSpecs}
+          atomRegistryStatus={atomRegistryStatus}
+          onCreateCard={createCard}
+          onCreateFromTemplate={createCardFromTemplate}
+          onCreateGroup={createGroup}
+          onDefineModelObject={(objectKind, name, shape, atomSpec) => {
+            dispatch({ type: "modelObject.define", objectKind, name, shape, atomSpec });
+            setLastAction(`Defined ${objectKind} ${name.trim() || "object"}.`);
+          }}
+          onCreateWorkspaceReference={(modelObjectId) => {
+            dispatch({ type: "workspaceReference.create", modelObjectId });
+            setLastAction(`Placed reference to ${modelObjectId}.`);
+          }}
+        />
+
         <section className="atlas-workbench-column">
           <AtlasWorkbench
             cards={workbench.cards}
             groups={workbench.groups}
             queries={workbench.queries}
+            connections={workbench.connections}
             highlightedCardIds={highlightedCardIds}
             dependencyPropertyNamesByCardId={dependencyPropertyNamesByCardId}
             diagnosticsByCardId={diagnosticsByCardId}
+            metadataByCardId={cvxpyMetadata}
             selectedCardId={workbench.selectedCardId}
             selectedGroupId={workbench.selectedGroupId}
             onSelectCard={(cardId) => {
@@ -558,6 +601,25 @@ export function AtlasApp() {
             }}
             onSelectGroup={(groupId) => dispatch({ type: "group.select", groupId })}
             onMoveCard={(cardId, position) => dispatch({ type: "card.move", cardId, position })}
+            onCreateWorkspaceReference={(modelObjectId, position) => {
+              dispatch({ type: "workspaceReference.create", modelObjectId, position });
+              setLastAction(`Placed reference to ${modelObjectId}.`);
+            }}
+            onCreateAtomFromSpec={(atomSpec, position) => {
+              dispatch({
+                type: "modelObject.define",
+                objectKind: "atom",
+                name: atomSpec.name,
+                shape: "scalar",
+                atomSpec,
+                position
+              });
+              setLastAction(`Defined CVXPY atom ${atomSpec.name}.`);
+            }}
+            onCreateConnection={(source, target) => {
+              dispatch({ type: "connection.create", source, target });
+              setLastAction(`Connected ${source.port ?? "output"} to ${target.slot ?? "input"}.`);
+            }}
             onAttachModule={(cardId, kind, position) => {
               dispatch({ type: "module.attach", cardId, kind, position });
               setLastAction(`Attached ${kind} module.`);
@@ -571,7 +633,6 @@ export function AtlasApp() {
               setLastAction(`Selected diagnostic ${diagnostic.label}.`);
             }}
           />
-          <AtlasModulePalette />
           <AtlasModelDock cards={workbench.cards} />
         </section>
 
@@ -586,6 +647,7 @@ export function AtlasApp() {
             solutionEvaluationWarning={solutionWarning}
             selectedRuntimeDiagnostic={selectedRuntimeDiagnostic}
             symbolicPreview={selectedSymbolicPreview}
+            cvxpyMetadata={selectedCvxpyMetadata}
             dependencyHighlightEnabled={dependencyHighlightEnabled}
             onAddTag={(cardId, key, value) => {
               dispatch({ type: "tag.add", cardId, key, value });
@@ -626,6 +688,10 @@ export function AtlasApp() {
             onUpdateTaggedSum={(cardId, patch) => {
               dispatch({ type: "function.taggedSum.update", cardId, patch });
               setLastAction("Updated TaggedSum function.");
+            }}
+            onUpdateAtomInput={(cardId, inputKind, inputId, patch) => {
+              dispatch({ type: "atom.input.update", cardId, inputKind, inputId, patch });
+              setLastAction("Updated atom input.");
             }}
             onUpdateObjective={(cardId, patch) => {
               dispatch({ type: "objective.update", cardId, patch });
@@ -812,29 +878,6 @@ function summarizeBackendEvaluation(response: Record<string, unknown>) {
     }
   }
   return lines;
-}
-
-const MODULE_KINDS: AtlasCardModuleKind[] = ["tag", "property", "trait", "diagnostic", "note"];
-
-function AtlasModulePalette() {
-  return (
-    <section className="atlas-module-palette" aria-label="Module palette">
-      <span>Modules</span>
-      {MODULE_KINDS.map((kind) => (
-        <button
-          key={kind}
-          type="button"
-          draggable
-          onDragStart={(event) => {
-            event.dataTransfer.setData("application/x-atlas-module-kind", kind);
-            event.dataTransfer.effectAllowed = "copy";
-          }}
-        >
-          + {kind}
-        </button>
-      ))}
-    </section>
-  );
 }
 
 function diagnosticsFromEvaluationReport(report: AtlasEvaluationReport): AtlasRuntimeDiagnostic[] {

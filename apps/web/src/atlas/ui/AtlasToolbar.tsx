@@ -1,6 +1,3 @@
-import { ATLAS_CARD_TYPES, type AtlasCardType } from "../core/types";
-import type { AtlasCardTemplate } from "../core/templates";
-
 export type AtlasToolbarAction =
   | "evaluate"
   | "solve"
@@ -17,46 +14,27 @@ export type AtlasToolbarAction =
 
 type AtlasToolbarProps = {
   onAction: (action: AtlasToolbarAction) => void;
-  onCreateCard: (cardType: AtlasCardType) => void;
-  onCreateFromTemplate: (templateId: string) => void;
-  onCreateGroup: () => void;
-  templates: AtlasCardTemplate[];
   canUndo: boolean;
   canRedo: boolean;
 };
 
 const primaryActions: Array<{ id: AtlasToolbarAction; label: string }> = [
+  { id: "inspect", label: "Validate" },
   { id: "evaluate", label: "Evaluate" },
   { id: "solve", label: "Solve" },
-  { id: "inspect", label: "Inspect" },
-  { id: "export", label: "Export IR" },
-  { id: "import", label: "Import IR" },
-  { id: "saveProject", label: "Save Project" },
-  { id: "loadProject", label: "Load Project" },
-  { id: "loadExample", label: "Load Example" }
+  { id: "export", label: "Export" },
+  { id: "saveProject", label: "Save" },
+  { id: "loadProject", label: "Load" },
+  { id: "search", label: "Search" }
 ];
 
 const historyActions: Array<{ id: AtlasToolbarAction; label: string }> = [
   { id: "undo", label: "Undo" },
-  { id: "redo", label: "Redo" },
-  { id: "search", label: "Search" }
+  { id: "redo", label: "Redo" }
 ];
-
-const cardTypeLabels: Record<AtlasCardType, string> = {
-  object: "Object",
-  decision: "Decision",
-  data: "Data",
-  function: "Function",
-  constraint: "Constraint",
-  objective: "Objective"
-};
 
 export function AtlasToolbar({
   onAction,
-  onCreateCard,
-  onCreateFromTemplate,
-  onCreateGroup,
-  templates,
   canUndo,
   canRedo
 }: AtlasToolbarProps) {
@@ -64,7 +42,7 @@ export function AtlasToolbar({
     <header className="atlas-toolbar">
       <div className="atlas-brand-block">
         <strong>Atlas Optimization Suite</strong>
-        <span>Card-based optimization workbench</span>
+        <span>CVXPY-first optimization workbench</span>
       </div>
 
       <nav aria-label="Atlas primary actions" className="atlas-toolbar-actions">
@@ -86,42 +64,6 @@ export function AtlasToolbar({
             {action.label}
           </button>
         ))}
-        <button type="button" onClick={() => onAction("clear")}>
-          Clear
-        </button>
-      </nav>
-
-      <nav aria-label="Create Atlas card" className="atlas-toolbar-actions atlas-create-actions">
-        <label className="atlas-template-picker">
-          <span>Template</span>
-          <select
-            defaultValue=""
-            onChange={(event) => {
-              const templateId = event.target.value;
-              if (!templateId) return;
-              onCreateFromTemplate(templateId);
-              event.currentTarget.value = "";
-            }}
-            aria-label="Create card from template"
-          >
-            <option value="" disabled>
-              Create from template...
-            </option>
-            {templates.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name} - {template.description}
-              </option>
-            ))}
-          </select>
-        </label>
-        {ATLAS_CARD_TYPES.map((cardType) => (
-          <button key={cardType} type="button" onClick={() => onCreateCard(cardType)}>
-            + {cardTypeLabels[cardType]}
-          </button>
-        ))}
-        <button type="button" onClick={onCreateGroup}>
-          + Group
-        </button>
       </nav>
 
       <a className="atlas-deck-link" href="?app=deck">

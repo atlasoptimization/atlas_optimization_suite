@@ -28,6 +28,8 @@ def test_all_backend_modules_import_cleanly() -> None:
         "reports",
         "kpis",
         "cvxpy_backend",
+        "cvxpy_registry",
+        "cvxpy_inspector",
     ]
 
     for module in modules:

@@ -1,18 +1,23 @@
 # Atlas Optimization Backend
 
 The backend modeling core lives in `atlas_opt` and stays independent from FastAPI routes.
+The active architecture direction is CVXPY-first: high-level semantic objects are compatibility
+and future macro layers over a generic CVXPY graph.
 
 Intended flow:
 
 1. The GUI exports Atlas IR JSON.
 2. `atlas_opt.schema` validates that JSON into typed Pydantic IR models.
-3. `AtlasDesk.from_ir(...)` compiles validated IR into semantic registries for cards, queries, objectives, constraints, diagnostics, and metadata.
-4. The evaluator, compiler, reports, KPIs, optimizer orchestration, and CVXPY backend operate on `AtlasDesk`.
+3. `AtlasDesk.from_ir(...)` currently compiles validated IR into compatibility registries for cards, queries, objectives, constraints, diagnostics, and metadata.
+4. The next core layer should add CVXPY registry/introspection so installed CVXPY atoms are exposed as generic `AtomSpec` metadata.
+5. The evaluator, compiler, reports, KPIs, optimizer orchestration, and CVXPY backend operate on the compiled model.
 
 FastAPI endpoints should remain thin transport adapters: receive JSON, validate IR, build an `AtlasDesk`, call the appropriate core service, and return structured results.
 
-The first CVXPY slice is intentionally small: continuous scalar decisions, constants, linear
-TaggedSum expressions, linear objectives, and simple linear constraints.
+The first implemented CVXPY slice is intentionally small: scalar variables, constants, linear
+TaggedSum compatibility expressions, linear objectives, and simple linear constraints. The next
+implementation path is automatic CVXPY atom discovery and generic atom compilation rather than
+manual frontend hard-coding of atoms.
 
 ## Local Development
 

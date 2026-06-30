@@ -206,7 +206,7 @@ pnpm audit:release-paths
 Atlas is the default app in local development. It is a visual optimization workbench with:
 
 - infinite-style pan/zoom card desk
-- Object, Decision, Data, Function, Constraint, and Objective cards
+- CVXPY-first structural nodes for variables, parameters, constants, expressions, constraints, objectives, solver workflow, and results
 - typed tags, editable properties, templates, groups, and query-based indexing
 - TaggedSum function cards
 - Objective and Constraint editors
@@ -215,7 +215,9 @@ Atlas is the default app in local development. It is a visual optimization workb
 - persistent Solution panel with solver status, objective value, decision values, constraint residuals, diagnostics, and generated CVXPY code
 - command palette with `Ctrl/Cmd+K`
 - Atlas IR export/import and Atlas project save/load
-- built-in production planning example via Load Example
+- built-in linear CVXPY example via Load Example
+
+The current architecture direction is CVXPY-first. Product, Factory, Trait, and other high-level semantic objects are future macro layers over the CVXPY graph, not the current core. See `docs/cvxpy_first_architecture.md`.
 
 Current supported modeling subset:
 

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { AtlasIR } from "../../core/ir";
 import { serializeAtlasIR, validateAtlasIR } from "../../core/ir";
+import { normalizeDiagnostic, type AtlasStructuredDiagnostic } from "../../core/diagnostics";
 import type { AtlasSolveResult, AtlasSolutionState } from "../../core/solution";
 import type { AtlasRuntimeDiagnostic } from "../../core/runtimeDiagnostics";
 import { ATLAS_VIEW_REGISTRY } from "./viewRegistry";
@@ -13,12 +14,7 @@ export type AtlasGeneratedCodeState =
   | { status: "success"; code: string; stale: boolean }
   | { status: "error"; message: string; previous?: string | null; stale?: boolean };
 
-export type AtlasViewDiagnostic = {
-  id: string;
-  level: "info" | "warning" | "error";
-  message: string;
-  sourceId?: string | null;
-};
+export type AtlasViewDiagnostic = AtlasStructuredDiagnostic;
 
 export function AtlasViewTabs({
   activeView,
@@ -183,15 +179,17 @@ export function AtlasDiagnosticsView({
       ) : (
         <ul className="atlas-view-diagnostics">
           {diagnostics.map((diagnostic) => (
-            <li key={diagnostic.id} className={`atlas-diagnostic-${diagnostic.level}`}>
+            <li key={diagnostic.id} className={`atlas-diagnostic-${diagnostic.severity}`}>
               <button
                 type="button"
-                disabled={!diagnostic.sourceId}
-                onClick={() => diagnostic.sourceId && onSelectSource(diagnostic.sourceId)}
+                disabled={!diagnostic.targetId}
+                onClick={() => diagnostic.targetId && onSelectSource(diagnostic.targetId)}
               >
-                <strong>{diagnostic.level}</strong>
+                <strong>{diagnostic.severity}</strong>
+                <em>{diagnostic.source}</em>
                 <span>{diagnostic.message}</span>
-                {diagnostic.sourceId && <em>{diagnostic.sourceId}</em>}
+                {diagnostic.suggestedFix && <small>{diagnostic.suggestedFix}</small>}
+                {diagnostic.targetId && <em>{diagnostic.targetId}</em>}
               </button>
             </li>
           ))}
@@ -214,26 +212,32 @@ export function buildAtlasViewDiagnostics({
 }): AtlasViewDiagnostic[] {
   const diagnostics: AtlasViewDiagnostic[] = [];
   validateAtlasIR(ir).forEach((message, index) => {
-    diagnostics.push({ id: `frontend-${index}`, level: "error", message });
+    diagnostics.push({ ...normalizeDiagnostic({ severity: "error", source: "frontend", message, targetKind: "project" }, index, "frontend"), id: `frontend-${index}` });
   });
   backendDiagnostics.forEach((message, index) => {
-    diagnostics.push({ id: `backend-${index}`, level: message.toLowerCase().includes("error") ? "error" : "warning", message });
+    diagnostics.push({ ...normalizeDiagnostic(message, index, "compiler"), id: `backend-${index}` });
   });
   runtimeDiagnostics.forEach((diagnostic) => {
     diagnostics.push({
       id: `runtime-${diagnostic.cardId}-${diagnostic.diagnosticId}`,
-      level: diagnostic.status === "error" ? "error" : diagnostic.status === "warning" || diagnostic.status === "stale" ? "warning" : "info",
+      severity: diagnostic.status === "error" ? "error" : diagnostic.status === "warning" || diagnostic.status === "stale" ? "warning" : "info",
+      source: diagnostic.source === "solve" ? "solver" : diagnostic.source === "validate" ? "compiler" : "frontend",
+      targetKind: "workspaceNode",
       message: `${diagnostic.label}: ${diagnostic.value}`,
-      sourceId: diagnostic.cardId
+      targetId: diagnostic.cardId,
+      relatedIds: []
     });
   });
   const result = solution.status === "success" ? solution.result : solution.status === "loading" || solution.status === "error" ? solution.previous : null;
   result?.diagnostics.forEach((diagnostic, index) => {
     diagnostics.push({
       id: `solve-${index}`,
-      level: diagnostic.level === "error" ? "error" : diagnostic.level === "warning" ? "warning" : "info",
+      severity: diagnostic.level === "error" ? "error" : diagnostic.level === "warning" ? "warning" : "info",
+      source: "solver",
+      targetKind: diagnostic.sourceId ? "modelObject" : "project",
       message: diagnostic.message,
-      sourceId: diagnostic.sourceId
+      targetId: diagnostic.sourceId,
+      relatedIds: []
     });
   });
   return diagnostics;

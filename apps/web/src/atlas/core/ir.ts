@@ -213,6 +213,7 @@ export type AtlasIR = {
   workspace?: AtlasIRWorkspace;
   views?: AtlasIRViews;
   future?: Record<string, unknown>;
+  settings?: AtlasWorkbenchState["settings"];
   /** Compatibility payload for the current semantic-card evaluator/compiler. */
   cards: AtlasCard[];
   queries: AtlasCardQuery[];
@@ -254,6 +255,7 @@ export function exportAtlasIR(
       camera: {},
       openPanels: {}
     },
+    settings: state.settings ? copyJson(state.settings) : undefined,
     views: {
       groups: state.groups.map((group) => ({
         ...group,
@@ -298,6 +300,7 @@ export function importAtlasIR(value: unknown): AtlasIRImportResult {
       queries: ir.queries ?? [],
       groups: ir.groups ?? ir.views?.groups ?? [],
       connections: Array.isArray(ir.connections) ? ir.connections.map((connection) => copyJson(connection)) : [],
+      settings: ir.settings,
       selectedCardId: null,
       selectedGroupId: null,
       selectedQueryId: null,

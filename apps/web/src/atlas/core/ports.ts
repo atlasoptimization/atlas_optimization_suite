@@ -115,15 +115,19 @@ export function getNodeOutputPorts(card: AtlasCard): AtlasNodePort[] {
 export function getNodeInputSlots(card: AtlasCard, connections: AtlasConnection[] = []): AtlasNodeSlot[] {
   const kind = card.modelObjectKind ?? cardTypeToModelKind(card.type);
   if (kind === "atom" || kind === "expression") {
-    return (card.atomConfig?.positionalInputs ?? []).map((input, index) => ({
+    const configuredSlots = (card.atomConfig?.positionalInputs ?? []).map((input, index) => ({
       id: `arg${index}`,
       label: input.name || `arg ${index + 1}`,
-      acceptedTypes: ["any_expression"],
+      acceptedTypes: ["any_expression"] as AtlasPortType[],
       required: true,
       variadic: isVariadicAtomArgument(card, input.name),
       sourceArgumentName: input.name,
       currentConnectionIds: connectionIdsForSlot(card, `arg${index}`, connections)
     }));
+    return configuredSlots.length > 0 ? configuredSlots : [
+      slot(card, "arg0", "arg 1", ["any_expression"], true, connections),
+      slot(card, "arg1", "arg 2", ["any_expression"], false, connections)
+    ];
   }
   if (kind === "constraint") {
     return [

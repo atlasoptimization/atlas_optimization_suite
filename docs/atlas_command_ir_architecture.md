@@ -34,3 +34,22 @@ Golden examples live in `examples/golden`. Expected results live in
 `examples/golden/expected`. Tiny LP is a fully solved regression fixture.
 Least squares and ridge are ordinary Atlas IR fixtures with explicit pending
 solve metadata until the matrix/quadratic compiler path is stabilized.
+
+Typed visual wiring lives in `apps/web/src/atlas/core/ports.ts`. It defines the
+shared port/slot type vocabulary (`scalar_expression`, `constraint`,
+`objective`, `constraint_list`, and related types), derives slots/ports for
+workspace cards, and validates compatibility before a connection mutates model
+state. Visual node behavior is registered in
+`apps/web/src/atlas/core/nodeTemplates.ts`; adding a new visual node should
+start with a template instead of editing the whole canvas.
+
+Diagnostics use the structured shape in
+`apps/web/src/atlas/core/diagnostics.ts` and
+`backend/atlas_opt_core/diagnostics.py`. Backend responses preserve legacy
+`level/sourceId` fields for compatibility but also include
+`severity/source/targetId/targetKind/suggestedFix/relatedIds`.
+
+Project settings are explicit model state (`state.settings`) and are exported in
+Atlas IR. Current settings include `defaultBackend`, `defaultSolver`,
+`autoValidate`, `showAdvancedCvxpy`, `numberFormat`, and
+`showDiagnosticsOnCanvas`.

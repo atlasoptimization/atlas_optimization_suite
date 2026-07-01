@@ -244,6 +244,13 @@ import {
   getCurrentSchemaVersion,
   migrateIr
 } from "../src/atlas/core/atlasIr/migrations";
+import {
+  getNodeInputSlots,
+  getNodeOutputPorts,
+  validatePortConnection
+} from "../src/atlas/core/ports";
+import { getNodeTemplate } from "../src/atlas/core/nodeTemplates";
+import { normalizeDiagnostic } from "../src/atlas/core/diagnostics";
 
 function emptyAtlasState(): AtlasWorkbenchState {
   return {
@@ -1812,6 +1819,97 @@ describe("Atlas canonical model definitions", () => {
 
     expect(html).toContain("hstack");
     expect(html).toContain("+ add");
+  });
+});
+
+describe("Atlas typed ports, templates, diagnostics, and settings", () => {
+  it("validates typed port compatibility for expressions, objectives, and constraints", () => {
+    const atomSpec = atomSpecFromSymbolId("cvxpy.atoms.norm.norm");
+    if (!atomSpec) throw new Error("Expected generated norm symbol.");
+    const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const withAtom = defineAtlasModelObject(withVariable, "atom", atomSpec.name, "scalar", atomSpec);
+    const variable = withAtom.cards.find((card) => card.modelObjectKind === "variable");
+    const atom = withAtom.cards.find((card) => card.modelObjectKind === "atom");
+    if (!variable || !atom) throw new Error("Expected variable and atom.");
+
+    expect(validatePortConnection(
+      getNodeOutputPorts(variable)[0]!,
+      getNodeInputSlots(atom)[0]!
+    ).ok).toBe(true);
+
+    const withConstraint = defineAtlasModelObject(withAtom, "constraint", "c", "scalar");
+    const withProblem = defineAtlasModelObject(withConstraint, "problem", "p", "scalar");
+    const constraint = withProblem.cards.find((card) => card.modelObjectKind === "constraint");
+    const problem = withProblem.cards.find((card) => card.modelObjectKind === "problem");
+    if (!constraint || !problem) throw new Error("Expected constraint and problem.");
+
+    expect(validatePortConnection(
+      getNodeOutputPorts(constraint)[0]!,
+      getNodeInputSlots(problem).find((slot) => slot.id === "constraints")!
+    ).ok).toBe(true);
+    expect(validatePortConnection(
+      getNodeOutputPorts(variable)[0]!,
+      getNodeInputSlots(problem).find((slot) => slot.id === "objective")!
+    ).ok).toBe(false);
+  });
+
+  it("derives SymbolSpec AtomNode slots and variadic template behavior", () => {
+    const hstackSpec = atomSpecFromSymbolId("cvxpy.atoms.affine.hstack.hstack");
+    if (!hstackSpec) throw new Error("Expected generated hstack symbol.");
+    const state = defineAtlasModelObject(emptyAtlasState(), "atom", hstackSpec.name, "scalar", hstackSpec);
+    const atom = state.cards[0]!;
+
+    expect(getNodeTemplate(atom).id).toBe("AtomNode");
+    expect(getNodeInputSlots(atom)[0]?.sourceArgumentName).toBe("arg_list");
+    expect(getNodeInputSlots(atom)[0]?.variadic).toBe(true);
+  });
+
+  it("keeps atom preview display-only while semantics remain structured", () => {
+    const atomSpec = FALLBACK_ATOM_SPECS.find((atom) => atom.name === "norm");
+    if (!atomSpec) throw new Error("Expected norm fallback atom.");
+    const state = defineAtlasModelObject(emptyAtlasState(), "atom", atomSpec.name, "scalar", atomSpec);
+    const atom = state.cards[0]!;
+
+    expect(atom.atomConfig?.displayName).toBe("norm");
+    expect(atom.atomConfig?.positionalInputs[0]?.name).toBe("x");
+    expect(atom.atomConfig?.importPath).toBe("cvxpy.norm");
+  });
+
+  it("normalizes structured diagnostics and renders them in Diagnostics View", () => {
+    const diagnostic = normalizeDiagnostic({
+      severity: "error",
+      source: "cvxpy",
+      targetId: "atom-loss",
+      targetKind: "modelObject",
+      message: "DCP violation.",
+      suggestedFix: "Use a convex objective."
+    });
+    const html = renderToString(
+      <AtlasDiagnosticsView diagnostics={[diagnostic]} stale={false} onValidate={() => undefined} onSelectSource={() => undefined} />
+    );
+
+    expect(html).toContain("cvxpy");
+    expect(html).toContain("DCP violation.");
+    expect(html).toContain("Use a convex objective.");
+  });
+
+  it("persists project settings through Atlas IR save/load", () => {
+    const state = {
+      ...emptyAtlasState(),
+      settings: {
+        defaultBackend: "mock",
+        defaultSolver: "CLARABEL",
+        autoValidate: true,
+        showAdvancedCvxpy: true,
+        numberFormat: "scientific" as const,
+        showDiagnosticsOnCanvas: false
+      }
+    };
+    const imported = importAtlasIR(JSON.parse(serializeAtlasIR(exportAtlasIR(state))));
+
+    expect(imported.diagnostics).toEqual([]);
+    expect(imported.state.settings?.defaultBackend).toBe("mock");
+    expect(imported.state.settings?.numberFormat).toBe("scientific");
   });
 });
 

@@ -89,7 +89,34 @@ export function normalizeAtlasState(value: unknown): AtlasWorkbenchState {
       ? value.selectedConnectionId
       : null;
 
-  return { cards, groups, queries, connections, selectedCardId, selectedGroupId, selectedQueryId, selectedConnectionId };
+  return {
+    cards,
+    groups,
+    queries,
+    connections,
+    selectedCardId,
+    selectedGroupId,
+    selectedQueryId,
+    selectedConnectionId,
+    settings: normalizeProjectSettings(value.settings)
+  };
+}
+
+function normalizeProjectSettings(value: unknown): AtlasWorkbenchState["settings"] {
+  const defaults = EMPTY_ATLAS_STATE.settings;
+  if (!isRecord(value)) return defaults;
+  return {
+    defaultBackend: typeof value.defaultBackend === "string" ? value.defaultBackend : defaults?.defaultBackend ?? "local-fastapi",
+    defaultSolver: typeof value.defaultSolver === "string" ? value.defaultSolver : defaults?.defaultSolver ?? "CLARABEL",
+    autoValidate: typeof value.autoValidate === "boolean" ? value.autoValidate : defaults?.autoValidate ?? false,
+    showAdvancedCvxpy: typeof value.showAdvancedCvxpy === "boolean" ? value.showAdvancedCvxpy : defaults?.showAdvancedCvxpy ?? false,
+    numberFormat: value.numberFormat === "scientific" || value.numberFormat === "fixed" || value.numberFormat === "compact"
+      ? value.numberFormat
+      : defaults?.numberFormat ?? "compact",
+    showDiagnosticsOnCanvas: typeof value.showDiagnosticsOnCanvas === "boolean"
+      ? value.showDiagnosticsOnCanvas
+      : defaults?.showDiagnosticsOnCanvas ?? true
+  };
 }
 
 function normalizeConnection(value: Record<string, unknown>): AtlasConnection | null {
@@ -112,7 +139,9 @@ function normalizeEndpoint(value: Record<string, unknown>) {
     nodeId: typeof value.nodeId === "string" ? value.nodeId : undefined,
     objectId: typeof value.objectId === "string" ? value.objectId : undefined,
     port: typeof value.port === "string" ? value.port : undefined,
-    slot: typeof value.slot === "string" ? value.slot : undefined
+    slot: typeof value.slot === "string" ? value.slot : undefined,
+    portType: typeof value.portType === "string" ? value.portType : undefined,
+    slotType: typeof value.slotType === "string" ? value.slotType : undefined
   };
   return endpoint.nodeId || endpoint.objectId ? endpoint : null;
 }

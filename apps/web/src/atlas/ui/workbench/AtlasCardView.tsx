@@ -4,7 +4,7 @@ import { constraintPreview } from "../../core/constraints";
 import { taggedSumPreview } from "../../core/functions";
 import { indexedPropertyLabel } from "../../core/indexSets";
 import { objectivePreview } from "../../core/objectives";
-import type { AtlasCard, AtlasCardModuleKind, AtlasCardQuery, AtlasCardType } from "../../core/types";
+import type { AtlasCard, AtlasCardModuleKind, AtlasCardQuery } from "../../core/types";
 import type { AtlasRuntimeDiagnostic } from "../../core/runtimeDiagnostics";
 import type { AtlasConnectionEndpoint } from "../../core/types";
 import { AtlasAtomNode } from "./AtlasAtomNode";
@@ -30,7 +30,7 @@ type AtlasCardViewProps = {
   onContextMenu?: (event: MouseEvent<HTMLElement>, card: AtlasCard) => void;
 };
 
-const TYPE_LABELS: Record<AtlasCardType, string> = {
+const TYPE_LABELS: Record<AtlasCard["type"], string> = {
   object: "Object",
   decision: "Decision",
   data: "Data",
@@ -339,55 +339,6 @@ export function AtlasCardView({
   );
 }
 
-function getNodePorts(card: AtlasCard, atomExpressionPreview: string | null = null) {
-  const kind = card.modelObjectKind ?? cardTypeToModelKind(card.type);
-  if (kind === "variable" || kind === "parameter" || kind === "constant") {
-    return [{ id: "expression", label: card.title }];
-  }
-  if (kind === "atom" || kind === "expression") {
-    return [{ id: "expression", label: atomExpressionPreview ?? card.atomConfig?.outputName ?? card.title }];
-  }
-  return [];
-}
-
-function getNodeSlots(card: AtlasCard, allCards: AtlasCard[]) {
-  const kind = card.modelObjectKind ?? cardTypeToModelKind(card.type);
-  if (kind === "atom" || kind === "expression") {
-    const positionalSlots = card.atomConfig?.positionalInputs.map((input, index) => ({
-      id: `arg${index}`,
-      label: connectedInputLabel(input, allCards) ?? input.name ?? `arg ${index + 1}`
-    })) ?? [];
-    const keywordSlots = Object.values(card.atomConfig?.keywordInputs ?? {})
-      .filter((input) => input.kind === "reference")
-      .map((input) => ({ id: input.name, label: connectedInputLabel(input, allCards) ?? input.name }));
-    return positionalSlots.length > 0 || keywordSlots.length > 0
-      ? [...positionalSlots, ...keywordSlots]
-      : [
-          { id: "arg0", label: "arg 1" },
-          { id: "arg1", label: "arg 2" }
-        ];
-  }
-  if (kind === "constraint") {
-    return [
-      { id: "lhs", label: "LHS" },
-      { id: "rhs", label: "RHS" }
-    ];
-  }
-  if (kind === "objective") {
-    return [
-      { id: "term0", label: card.objective?.direction ?? "term" },
-      { id: "term1", label: "term +" }
-    ];
-  }
-  if (kind === "problem") {
-    return [
-      { id: "objective", label: "objective" },
-      { id: "constraints", label: "constraints" }
-    ];
-  }
-  return [];
-}
-
 function atomPreview(card: AtlasCard, allCards: AtlasCard[]) {
   if (!card.atomConfig) return null;
   const positional = card.atomConfig.positionalInputs.map((input) => connectedInputLabel(input, allCards) ?? input.name);
@@ -422,14 +373,6 @@ function readPortDrag(event: DragEvent<HTMLElement>): AtlasConnectionEndpoint | 
   } catch {
     return null;
   }
-}
-
-function cardTypeToModelKind(cardType: AtlasCardType) {
-  if (cardType === "decision") return "variable";
-  if (cardType === "data") return "parameter";
-  if (cardType === "object") return "constant";
-  if (cardType === "function") return "atom";
-  return cardType;
 }
 
 function formatPropertyValue(value: AtlasCard["properties"][number]["value"]) {

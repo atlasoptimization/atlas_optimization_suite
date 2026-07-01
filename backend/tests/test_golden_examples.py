@@ -51,6 +51,14 @@ def test_golden_tiny_lp_solves_to_expected_values() -> None:
         )
 
 
+def test_backend_codegen_returns_structured_diagnostics() -> None:
+    result = generate_code(read_json(GOLDEN_ROOT / "tiny_lp.atlas.json"))
+
+    assert "code" in result
+    assert all("severity" in diagnostic for diagnostic in result["diagnostics"])
+    assert all("targetKind" in diagnostic for diagnostic in result["diagnostics"])
+
+
 @pytest.mark.parametrize("name", ["least_squares", "ridge_regression"])
 def test_golden_advanced_examples_mark_solve_support_explicitly(name: str) -> None:
     expected = read_json(GOLDEN_ROOT / "expected" / f"{name}.expected.json")

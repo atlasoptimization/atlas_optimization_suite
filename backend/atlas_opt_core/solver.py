@@ -6,6 +6,7 @@ from typing import Any
 
 from atlas_opt.optimizer import AtlasOptimizer
 from atlas_opt.schema import AtlasIR
+from .diagnostics import normalize_response_diagnostics
 from .migrations import migrate_ir
 
 
@@ -15,7 +16,7 @@ def solve_ir(ir: AtlasIR | dict[str, Any]) -> dict[str, Any]:
     migrated, migration_diagnostics = migrate_ir(ir)
     result = AtlasOptimizer.from_ir(migrated).solve()
     result["diagnostics"] = [*migration_diagnostics, *result.get("diagnostics", [])]
-    return result
+    return normalize_response_diagnostics(result, "solver")
 
 
 def evaluate_ir(ir: AtlasIR | dict[str, Any]) -> dict[str, Any]:
@@ -24,4 +25,4 @@ def evaluate_ir(ir: AtlasIR | dict[str, Any]) -> dict[str, Any]:
     migrated, migration_diagnostics = migrate_ir(ir)
     result = AtlasOptimizer.from_ir(migrated).evaluate()
     result["diagnostics"] = [*migration_diagnostics, *result.get("diagnostics", [])]
-    return result
+    return normalize_response_diagnostics(result, "compiler")

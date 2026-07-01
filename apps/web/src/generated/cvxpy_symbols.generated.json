@@ -1,0 +1,3911 @@
+{
+  "cvxpyVersion": "1.7.5",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "schemaVersion": "0.1",
+  "symbols": [
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "left"
+        },
+        {
+          "kind": "expression",
+          "name": "right"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": false,
+      "category": "Constraints",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "",
+      "examples": [],
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "atlas.constraint.eq",
+      "kind": "constraint_operator",
+      "name": "equal",
+      "signature": "(left, right)",
+      "source": "pseudo",
+      "symbol": "=="
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "left"
+        },
+        {
+          "kind": "expression",
+          "name": "right"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": false,
+      "category": "Constraints",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "",
+      "examples": [],
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "atlas.constraint.geq",
+      "kind": "constraint_operator",
+      "name": "greater_equal",
+      "signature": "(left, right)",
+      "source": "pseudo",
+      "symbol": ">="
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "left"
+        },
+        {
+          "kind": "expression",
+          "name": "right"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": false,
+      "category": "Constraints",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "",
+      "examples": [],
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "atlas.constraint.leq",
+      "kind": "constraint_operator",
+      "name": "less_equal",
+      "signature": "(left, right)",
+      "source": "pseudo",
+      "symbol": "<="
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "left"
+        },
+        {
+          "kind": "expression",
+          "name": "right"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": false,
+      "category": "Operators",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "",
+      "examples": [],
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "atlas.operator.add",
+      "kind": "operator",
+      "name": "add",
+      "signature": "(left, right)",
+      "source": "pseudo",
+      "symbol": "+"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "left"
+        },
+        {
+          "kind": "expression",
+          "name": "right"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": false,
+      "category": "Operators",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "",
+      "examples": [],
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "atlas.operator.matmul",
+      "kind": "operator",
+      "name": "matmul",
+      "signature": "(left, right)",
+      "source": "pseudo",
+      "symbol": "@"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "left"
+        },
+        {
+          "kind": "expression",
+          "name": "right"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": false,
+      "category": "Operators",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "",
+      "examples": [],
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "atlas.operator.multiply",
+      "kind": "operator",
+      "name": "multiply",
+      "note": "DCP depends on one side being constant or parameter.",
+      "signature": "(left, right)",
+      "source": "pseudo",
+      "symbol": "*"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": false,
+      "category": "Operators",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "",
+      "examples": [],
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "atlas.operator.negate",
+      "kind": "operator",
+      "name": "negate",
+      "signature": "(x)",
+      "source": "pseudo",
+      "symbol": "-"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "left"
+        },
+        {
+          "kind": "expression",
+          "name": "right"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": false,
+      "category": "Operators",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "",
+      "examples": [],
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "atlas.operator.subtract",
+      "kind": "operator",
+      "name": "subtract",
+      "signature": "(left, right)",
+      "source": "pseudo",
+      "symbol": "-"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "lh_exp"
+        },
+        {
+          "kind": "expression",
+          "name": "rh_exp"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Matrix multiplication.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.binary_operators.matmul",
+      "importPath": "cvxpy.atoms.affine.binary_operators.matmul",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.binary_operators",
+      "name": "matmul",
+      "signature": "(lh_exp, rh_exp) -> 'MulExpression'",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "lh_expr"
+        },
+        {
+          "kind": "expression",
+          "name": "rh_expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Multiplies two expressions elementwise.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.binary_operators.multiply",
+      "importPath": "cvxpy.atoms.affine.binary_operators.multiply",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.binary_operators",
+      "name": "multiply",
+      "signature": "(lh_expr, rh_expr) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "y"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Return the outer product of (x,y). Parameters ---------- x : Expression, int, float, NumPy ndarray, or nested list thereof. Input is flattened if not already a vector. The linear argument to the outer product. y : Expression, int, float, Nu",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.binary_operators.outer",
+      "importPath": "cvxpy.atoms.affine.binary_operators.outer",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.binary_operators",
+      "name": "outer",
+      "signature": "(x, y)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "y"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Alias for vdot.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.binary_operators.scalar_product",
+      "importPath": "cvxpy.atoms.affine.binary_operators.scalar_product",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.binary_operators",
+      "name": "scalar_product",
+      "signature": "(x, y)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "y"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Return the standard inner product (or \"scalar product\") of (x,y). Parameters ---------- x : Expression, int, float, NumPy ndarray, or nested list thereof. The conjugate-linear argument to the inner product. y : Expression, int, float, NumPy",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.binary_operators.vdot",
+      "importPath": "cvxpy.atoms.affine.binary_operators.vdot",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.binary_operators",
+      "name": "vdot",
+      "signature": "(x, y)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "block_lists"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Stacking",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Constructs a block matrix. Takes a list of lists. Each internal list is stacked horizontally. The internal lists are stacked vertically. Parameters ---------- block_lists : list of lists The blocks of the block matrix. Return ------ CVXPY e",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.bmat.bmat",
+      "importPath": "cvxpy.atoms.affine.bmat.bmat",
+      "kind": "affine",
+      "module": "cvxpy.atoms.affine.bmat",
+      "name": "bmat",
+      "signature": "(block_lists)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "kind": "expression",
+          "name": "shape"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Broadcast the expression given a shape input",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.broadcast_to.broadcast_to",
+      "importPath": "cvxpy.atoms.affine.broadcast_to.broadcast_to",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.broadcast_to",
+      "name": "broadcast_to",
+      "signature": "(expr, shape) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "arg_list"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "axis"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "0"
+      },
+      "doc": "",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.concatenate.concatenate",
+      "importPath": "cvxpy.atoms.affine.concatenate.concatenate",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.concatenate",
+      "name": "concatenate",
+      "signature": "(arg_list, axis: Optional[int] = 0)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise complex conjugate.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.conj.conj",
+      "importPath": "cvxpy.atoms.affine.conj.conj",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.conj",
+      "name": "conj",
+      "signature": "(expr) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "lh_expr"
+        },
+        {
+          "kind": "expression",
+          "name": "rh_expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "1D discrete convolution of two vectors. The discrete convolution :math:`c` of vectors :math:`a` and :math:`b` of lengths :math:`n` and :math:`m`, respectively, is a length-:math:`(n+m-1)` vector where .. math:: c_k = \\sum_{i+j=k} a_ib_j, \\q",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.conv.conv",
+      "importPath": "cvxpy.atoms.affine.conv.conv",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.conv",
+      "name": "conv",
+      "signature": "(lh_expr, rh_expr) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "1D discrete convolution of two vectors. The discrete convolution :math:`c` of vectors :math:`a` and :math:`b` of lengths :math:`n` and :math:`m`, respectively, is a length-:math:`(n+m-1)` vector where .. math:: c_k = \\sum_{i+j=k} a_ib_j, \\q",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.conv.convolve",
+      "importPath": "cvxpy.atoms.affine.conv.convolve",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.conv",
+      "name": "convolve",
+      "signature": "(*args) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "axis"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "0"
+      },
+      "doc": "Cumulative sum of the elements of an expression. Attributes ---------- expr : CVXPY expression The expression being summed. axis : int The axis to sum across if 2D.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.cumsum.cumsum",
+      "importPath": "cvxpy.atoms.affine.cumsum.cumsum",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.cumsum",
+      "name": "cumsum",
+      "signature": "(expr: cvxpy.expressions.expression.Expression, axis: int = 0) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "k"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "k": "0"
+      },
+      "doc": "Extracts the diagonal from a matrix or makes a vector a diagonal matrix. Parameters ---------- expr : Expression or numeric constant A vector or square matrix. k : int Diagonal in question. The default is 0. Use k>0 for diagonals above the ",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.diag.diag",
+      "importPath": "cvxpy.atoms.affine.diag.diag",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.diag",
+      "name": "diag",
+      "signature": "(expr, k: 'int' = 0) -> \"Union['diag_mat', 'diag_vec']\"",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": 1,
+          "kind": "parameter",
+          "name": "k"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "axis"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "0",
+        "k": "1"
+      },
+      "doc": "Vector of kth order differences. Takes in a vector of length n and returns a vector of length n-k of the kth order differences. diff(x) returns the vector of differences between adjacent elements in the vector, that is [x[2] - x[1], x[3] - ",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.diff.diff",
+      "importPath": "cvxpy.atoms.affine.diff.diff",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.diff",
+      "name": "diff",
+      "signature": "(x, k: int = 1, axis: int = 0)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "arg_list"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Stacking",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Horizontal concatenation of an arbitrary number of Expressions. Parameters ---------- arg_list : list of Expression The Expressions to concatenate.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.hstack.hstack",
+      "importPath": "cvxpy.atoms.affine.hstack.hstack",
+      "kind": "affine",
+      "module": "cvxpy.atoms.affine.hstack",
+      "name": "hstack",
+      "signature": "(arg_list) -> 'Hstack'",
+      "source": "auto+override",
+      "ui": {
+        "argumentUiHints": {
+          "arg_list": {
+            "widget": "variadic_expression_list"
+          }
+        }
+      }
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Extracts the imaginary part of an expression.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.imag.imag",
+      "importPath": "cvxpy.atoms.affine.imag.imag",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.imag",
+      "name": "imag",
+      "signature": "(expr) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "lh_expr"
+        },
+        {
+          "kind": "expression",
+          "name": "rh_expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Kronecker product.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.kron.kron",
+      "importPath": "cvxpy.atoms.affine.kron.kron",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.kron",
+      "name": "kron",
+      "signature": "(lh_expr, rh_expr) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "kind": "expression",
+          "name": "dims"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "axis"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "0"
+      },
+      "doc": "Assumes :math:`\\texttt{expr} = X_1 \\otimes \\cdots \\otimes X_n` is a 2D Kronecker product composed of :math:`n = \\texttt{len(dims)}` implicit subsystems. Letting :math:`k = \\texttt{axis}`, the returned expression represents the *partial trac",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.partial_trace.partial_trace",
+      "importPath": "cvxpy.atoms.affine.partial_trace.partial_trace",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.partial_trace",
+      "name": "partial_trace",
+      "signature": "(expr, dims: Tuple[int], axis: Optional[int] = 0)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "kind": "expression",
+          "name": "dims"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "axis"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "0"
+      },
+      "doc": "Assumes :math:`\\texttt{expr} = X_1 \\otimes ... \\otimes X_n` is a 2D Kronecker product composed of :math:`n = \\texttt{len(dims)}` implicit subsystems. Letting :math:`k = \\texttt{axis}`, the returned expression is a *partial transpose* of :ma",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.partial_transpose.partial_transpose",
+      "importPath": "cvxpy.atoms.affine.partial_transpose.partial_transpose",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.partial_transpose",
+      "name": "partial_transpose",
+      "signature": "(expr, dims: Tuple[int, ...], axis: Optional[int] = 0)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "kind": "expression",
+          "name": "shape"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Shape transforms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Promote a scalar expression to a vector/matrix. Parameters ---------- expr : Expression The expression to promote. shape : tuple The shape to promote to. Raises ------ ValueError If ``expr`` is not a scalar.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.promote.promote",
+      "importPath": "cvxpy.atoms.affine.promote.promote",
+      "kind": "shape",
+      "module": "cvxpy.atoms.affine.promote",
+      "name": "promote",
+      "signature": "(expr: cvxpy.expressions.expression.Expression, shape: Tuple[int, ...])",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Extracts the real part of an expression.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.real.real",
+      "importPath": "cvxpy.atoms.affine.real.real",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.real",
+      "name": "real",
+      "signature": "(expr) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.reshape.deep_flatten",
+      "importPath": "cvxpy.atoms.affine.reshape.deep_flatten",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.reshape",
+      "name": "deep_flatten",
+      "signature": "(x)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "kind": "expression",
+          "name": "shape"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "order"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Shape transforms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "order": "None"
+      },
+      "doc": "Reshapes the expression. Vectorizes the expression then unvectorizes it into the new shape. The entries are reshaped and stored in column-major order, also known as Fortran order. Parameters ---------- expr : Expression The expression to re",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.reshape.reshape",
+      "importPath": "cvxpy.atoms.affine.reshape.reshape",
+      "kind": "shape",
+      "module": "cvxpy.atoms.affine.reshape",
+      "name": "reshape",
+      "signature": "(expr, shape: 'int | Tuple[int, ...]', order: \"Literal['F', 'C', None]\" = None) -> 'None'",
+      "source": "auto+override",
+      "ui": {
+        "argumentUiHints": {
+          "shape": {
+            "widget": "shape_tuple_editor"
+          }
+        }
+      }
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False"
+      },
+      "doc": "Sum the entries of an expression over a given axis. Parameters ---------- expr : Expression The expression to sum the entries of. axis : None or int or tuple of ints, optional The axis or axes along which to sum. The default (axis=None) wil",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.sum.Sum",
+      "importPath": "cvxpy.atoms.affine.sum.Sum",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.sum",
+      "name": "sum",
+      "signature": "(expr, axis=None, keepdims=False) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The sum of the diagonal entries of a matrix. Parameters ---------- expr : Expression The expression to sum the diagonal of.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.trace.trace",
+      "importPath": "cvxpy.atoms.affine.trace.trace",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.trace",
+      "name": "trace",
+      "signature": "(expr) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "kind": "expression",
+          "name": "source"
+        },
+        {
+          "kind": "expression",
+          "name": "destination"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Move axes of the expression to new positions. Parameters ---------- expr : AffAtom The expression to move axes of. source : list of int The original positions of the axes to move. destination : list of int The new positions for the moved ax",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.transpose.moveaxis",
+      "importPath": "cvxpy.atoms.affine.transpose.moveaxis",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.transpose",
+      "name": "moveaxis",
+      "signature": "(expr, source: List[int], destination: List[int])",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "kind": "expression",
+          "name": "axes"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Permute the dimensions of the expression. Alias for transpose with specified axes. Parameters ---------- expr : AffAtom The expression to permute dimensions of. axes : list or tuple of int The new order of the axes. Returns ------- AffAtom ",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.transpose.permute_dims",
+      "importPath": "cvxpy.atoms.affine.transpose.permute_dims",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.transpose",
+      "name": "permute_dims",
+      "signature": "(expr, axes: List[int])",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "kind": "expression",
+          "name": "axis1"
+        },
+        {
+          "kind": "expression",
+          "name": "axis2"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Swap two axes of the expression. Parameters ---------- expr : AffAtom The expression to swap axes of. axis1 : int The first axis to swap. axis2 : int The second axis to swap. Returns ------- AffAtom A transpose atom with the axes swapped.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.transpose.swapaxes",
+      "importPath": "cvxpy.atoms.affine.transpose.swapaxes",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.transpose",
+      "name": "swapaxes",
+      "signature": "(expr, axis1: int, axis2: int)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axes"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axes": "None"
+      },
+      "doc": "Transpose an expression. For an n-D expression, if axes are given, the order indicates the permutation of axes.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.transpose.transpose",
+      "importPath": "cvxpy.atoms.affine.transpose.transpose",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.transpose",
+      "name": "transpose",
+      "signature": "(expr, axes=None) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The vectorized strictly upper-triangular entries. The vectorization is performed by concatenating (partial) rows. For example, if :: A = np.array([[10, 11, 12, 13], [14, 15, 16, 17], [18, 19, 20, 21], [22, 23, 24, 25]]) then we have :: uppe",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.upper_tri.upper_tri",
+      "importPath": "cvxpy.atoms.affine.upper_tri.upper_tri",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.upper_tri",
+      "name": "upper_tri",
+      "signature": "(expr) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "strict"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "strict": "False"
+      },
+      "doc": "Reshapes a vector into an upper triangular matrix in row-major order. The strict argument specifies whether an upper or a strict upper triangular matrix should be returned. Inverts cp.upper_tri.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.upper_tri.vec_to_upper_tri",
+      "importPath": "cvxpy.atoms.affine.upper_tri.vec_to_upper_tri",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.upper_tri",
+      "name": "vec_to_upper_tri",
+      "signature": "(expr, strict: bool = False)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "order"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Shape transforms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "order": "None"
+      },
+      "doc": "Flattens the matrix X into a 1-d array. Parameters ---------- X : Expression or numeric constant The matrix to flatten. order: column-major ('F') or row-major ('C') order. Returns ------- Expression An Expression representing the flattened ",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.vec.vec",
+      "importPath": "cvxpy.atoms.affine.vec.vec",
+      "kind": "shape",
+      "module": "cvxpy.atoms.affine.vec",
+      "name": "vec",
+      "signature": "(X, order: Literal['F', 'C', None] = None)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "arg_list"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Stacking",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Wrapper on vstack to ensure list argument.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.vstack.vstack",
+      "importPath": "cvxpy.atoms.affine.vstack.vstack",
+      "kind": "affine",
+      "module": "cvxpy.atoms.affine.vstack",
+      "name": "vstack",
+      "signature": "(arg_list) -> 'Vstack'",
+      "source": "auto+override",
+      "ui": {
+        "argumentUiHints": {
+          "arg_list": {
+            "widget": "variadic_expression_list"
+          }
+        }
+      }
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "arg"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Asserts that a square matrix is Hermitian.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.wraps.hermitian_wrap",
+      "importPath": "cvxpy.atoms.affine.wraps.hermitian_wrap",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.wraps",
+      "name": "hermitian_wrap",
+      "signature": "(arg) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "arg"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Asserts that a square matrix is PSD.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.wraps.psd_wrap",
+      "importPath": "cvxpy.atoms.affine.wraps.psd_wrap",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.wraps",
+      "name": "psd_wrap",
+      "signature": "(arg) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "arg"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Asserts that X is a real square matrix, satisfying X + X.T == 0.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.wraps.skew_symmetric_wrap",
+      "importPath": "cvxpy.atoms.affine.wraps.skew_symmetric_wrap",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.wraps",
+      "name": "skew_symmetric_wrap",
+      "signature": "(arg) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "arg"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Affine",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Asserts that a real square matrix is symmetric",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.affine.wraps.symmetric_wrap",
+      "importPath": "cvxpy.atoms.affine.wraps.symmetric_wrap",
+      "kind": "atom",
+      "module": "cvxpy.atoms.affine.wraps",
+      "name": "symmetric_wrap",
+      "signature": "(arg) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "A"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Condition Number; :math:`\\lambda_{\\max}(A) / \\lambda_{\\min}(A)`. Requires that A be a Positive Semidefinite Matrix.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.condition_number.condition_number",
+      "importPath": "cvxpy.atoms.condition_number.condition_number",
+      "kind": "atom",
+      "module": "cvxpy.atoms.condition_number",
+      "name": "condition_number",
+      "signature": "(A) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "axis"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "0"
+      },
+      "doc": "Cumulative maximum.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.cummax.cummax",
+      "importPath": "cvxpy.atoms.cummax.cummax",
+      "kind": "atom",
+      "module": "cvxpy.atoms.cummax",
+      "name": "cummax",
+      "signature": "(x, axis: int = 0) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "axis"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "0"
+      },
+      "doc": "Cumulative product of the elements of an expression. Attributes ---------- expr : CVXPY expression The expression being multiplied. axis : int The axis to multiply across.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.cumprod.cumprod",
+      "importPath": "cvxpy.atoms.cumprod.cumprod",
+      "kind": "atom",
+      "module": "cvxpy.atoms.cumprod",
+      "name": "cumprod",
+      "signature": "(expr: cvxpy.expressions.expression.Expression, axis: int = 0) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "beta"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The conditional value at risk (CVaR) of a random variable represented by the vector of samples ``x``. For a probability level :math:`\\beta \\in [0,1)`, CVaR is the expected value of ``x`` in the worst :math:`(1-\\beta)` fraction of cases. Equ",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.cvar.cvar",
+      "importPath": "cvxpy.atoms.cvar.cvar",
+      "kind": "atom",
+      "module": "cvxpy.atoms.cvar",
+      "name": "cvar",
+      "signature": "(x, beta)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "a"
+        },
+        {
+          "kind": "expression",
+          "name": "b"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "norm(x - a)_2 / norm(x - b)_2, with norm(x - a)_2 <= norm(x - b). `a` and `b` must be constants.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.dist_ratio.dist_ratio",
+      "importPath": "cvxpy.atoms.dist_ratio.dist_ratio",
+      "kind": "atom",
+      "module": "cvxpy.atoms.dist_ratio",
+      "name": "dist_ratio",
+      "signature": "(x, a, b) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        },
+        {
+          "kind": "expression",
+          "name": "W"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Computes :math:`\\langle sort\\left(vec(X)\\right), sort\\left(vec(W)\\right) \\rangle`, where :math:`X` is an expression and :math:`W` is constant. | Both arguments are flattened, i.e., we define :math:`x=vec(X)`, :math:`w=vec(W)`. | If the leng",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.dotsort.dotsort",
+      "importPath": "cvxpy.atoms.dotsort.dotsort",
+      "kind": "atom",
+      "module": "cvxpy.atoms.dotsort",
+      "name": "dotsort",
+      "signature": "(X, W) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise absolute value",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.abs.abs",
+      "importPath": "cvxpy.atoms.elementwise.abs.abs",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.abs",
+      "name": "abs",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise ceiling.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.ceil.ceil",
+      "importPath": "cvxpy.atoms.elementwise.ceil.ceil",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.ceil",
+      "name": "ceil",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise floor.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.ceil.floor",
+      "importPath": "cvxpy.atoms.elementwise.ceil.floor",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.ceil",
+      "name": "floor",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise :math:`-x\\log x`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.entr.entr",
+      "importPath": "cvxpy.atoms.elementwise.entr.entr",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.entr",
+      "name": "entr",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise :math:`e^{x}`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.exp.exp",
+      "importPath": "cvxpy.atoms.elementwise.exp.exp",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.exp",
+      "name": "exp",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": 1,
+          "kind": "parameter",
+          "name": "M"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "M": "1"
+      },
+      "doc": "The Huber function .. math:: \\operatorname{Huber}(x, M) = \\begin{cases} 2M|x|-M^2 & \\text{for } |x| \\geq |M| \\\\ |x|^2 & \\text{for } |x| \\leq |M|. \\end{cases} :math:`M` defaults to 1. Parameters ---------- x : Expression The expression to wh",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.huber.huber",
+      "importPath": "cvxpy.atoms.elementwise.huber.huber",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.huber",
+      "name": "huber",
+      "signature": "(x, M: int = 1) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": ":math:`x^{-1}` for :math:`x > 0`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.inv_pos.inv_pos",
+      "importPath": "cvxpy.atoms.elementwise.inv_pos.inv_pos",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.inv_pos",
+      "name": "inv_pos",
+      "signature": "(x)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "y"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": ":math:`x\\log(x/y) - x + y` For disambiguation between kl_div and rel_entr, see https://github.com/cvxpy/cvxpy/issues/733",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.kl_div.kl_div",
+      "importPath": "cvxpy.atoms.elementwise.kl_div.kl_div",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.kl_div",
+      "name": "kl_div",
+      "signature": "(x, y) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise :math:`\\log x`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.log.log",
+      "importPath": "cvxpy.atoms.elementwise.log.log",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.log",
+      "name": "log",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise :math:`\\log (1 + x)`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.log1p.log1p",
+      "importPath": "cvxpy.atoms.elementwise.log1p.log1p",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.log1p",
+      "name": "log1p",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise log of the cumulative distribution function of a standard normal random variable. The implementation is a quadratic approximation with modest accuracy over [-4, 4]. For details on the nature of the approximation, refer to `CVXPY",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.log_normcdf.log_normcdf",
+      "importPath": "cvxpy.atoms.elementwise.log_normcdf.log_normcdf",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.log_normcdf",
+      "name": "log_normcdf",
+      "signature": "(x)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise log of the gamma function. Implementation has modest accuracy over the full range, approaching perfect accuracy as x goes to infinity. For details on the nature of the approximation, refer to `CVXPY GitHub Issue #228 <https://gi",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.loggamma.loggamma",
+      "importPath": "cvxpy.atoms.elementwise.loggamma.loggamma",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.loggamma",
+      "name": "loggamma",
+      "signature": "(x)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": ":math:`\\log(1 + e^{x})` This is a special case of log(sum(exp)) that is evaluates to a vector rather than to a scalar which is useful for logistic regression.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.logistic.logistic",
+      "importPath": "cvxpy.atoms.elementwise.logistic.logistic",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.logistic",
+      "name": "logistic",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "arg1"
+        },
+        {
+          "kind": "expression",
+          "name": "arg2"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise maximum of a sequence of expressions.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.maximum.maximum",
+      "importPath": "cvxpy.atoms.elementwise.maximum.maximum",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.maximum",
+      "name": "maximum",
+      "signature": "(arg1, arg2, *args) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "arg1"
+        },
+        {
+          "kind": "expression",
+          "name": "arg2"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise minimum of a sequence of expressions.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.minimum.minimum",
+      "importPath": "cvxpy.atoms.elementwise.minimum.minimum",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.minimum",
+      "name": "minimum",
+      "signature": "(arg1, arg2, *args) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Alias for -minimum{x, 0}.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.neg.neg",
+      "importPath": "cvxpy.atoms.elementwise.neg.neg",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.neg",
+      "name": "neg",
+      "signature": "(x)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Alias for maximum{x,0}.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.pos.pos",
+      "importPath": "cvxpy.atoms.elementwise.pos.pos",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.pos",
+      "name": "pos",
+      "signature": "(x)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "p"
+        },
+        {
+          "default": 1024,
+          "kind": "parameter",
+          "name": "max_denom"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "max_denom": "1024"
+      },
+      "doc": "Elementwise power function :math:`f(x) = x^p`. If ``expr`` is a CVXPY expression, then ``expr**p`` is equivalent to ``power(expr, p)``. For DCP problems, the exponent `p` must be a numeric constant. For DGP problems, `p` can also be a scala",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.power.power",
+      "importPath": "cvxpy.atoms.elementwise.power.power",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.power",
+      "name": "power",
+      "signature": "(x, p, max_denom: int = 1024) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "y"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": ":math:`x\\log(x/y)` For disambiguation between rel_entr and kl_div, see https://github.com/cvxpy/cvxpy/issues/733",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.rel_entr.rel_entr",
+      "importPath": "cvxpy.atoms.elementwise.rel_entr.rel_entr",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.rel_entr",
+      "name": "rel_entr",
+      "signature": "(x, y) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "alpha"
+        },
+        {
+          "kind": "expression",
+          "name": "beta"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Alias for ``alpha*pos(x) + beta*neg(x)``.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.scalene.scalene",
+      "importPath": "cvxpy.atoms.elementwise.scalene.scalene",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.scalene",
+      "name": "scalene",
+      "signature": "(x, alpha, beta)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The square root of an expression.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.sqrt.sqrt",
+      "importPath": "cvxpy.atoms.elementwise.sqrt.sqrt",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.sqrt",
+      "name": "sqrt",
+      "signature": "(x)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Quadratic",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The square of an expression.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.square.square",
+      "importPath": "cvxpy.atoms.elementwise.square.square",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.square",
+      "name": "square",
+      "signature": "(x)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Elementwise",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Elementwise :math:`{x}*e^{x}`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.elementwise.xexp.xexp",
+      "importPath": "cvxpy.atoms.elementwise.xexp.xexp",
+      "kind": "atom",
+      "module": "cvxpy.atoms.elementwise.xexp",
+      "name": "xexp",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The unity resolvent of a positive matrix, :math:`(I - X)^{-1}`. For an elementwise positive matrix :math:`X`, this atom represents .. math:: (I - X)^{-1}, and it enforces the constraint that the spectral radius of :math:`X` is at most :math",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.eye_minus_inv.eye_minus_inv",
+      "importPath": "cvxpy.atoms.eye_minus_inv.eye_minus_inv",
+      "kind": "atom",
+      "module": "cvxpy.atoms.eye_minus_inv",
+      "name": "eye_minus_inv",
+      "signature": "(X) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        },
+        {
+          "kind": "expression",
+          "name": "s"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The resolvent of a positive matrix, :math:`(sI - X)^{-1}`. For an elementwise positive matrix :math:`X` and a positive scalar :math:`s`, this atom computes .. math:: (sI - X)^{-1}, and it enforces the constraint that the spectral radius of ",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.eye_minus_inv.resolvent",
+      "importPath": "cvxpy.atoms.eye_minus_inv.resolvent",
+      "kind": "atom",
+      "module": "cvxpy.atoms.eye_minus_inv",
+      "name": "resolvent",
+      "signature": "(X, s: float)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "A"
+        },
+        {
+          "kind": "expression",
+          "name": "B"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Maximum generalized eigenvalue; :math:`\\lambda_{\\max}(A, B)`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.gen_lambda_max.gen_lambda_max",
+      "importPath": "cvxpy.atoms.gen_lambda_max.gen_lambda_max",
+      "kind": "atom",
+      "module": "cvxpy.atoms.gen_lambda_max",
+      "name": "gen_lambda_max",
+      "signature": "(A, B) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "p"
+        },
+        {
+          "default": 1024,
+          "kind": "parameter",
+          "name": "max_denom"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "max_denom": "1024",
+        "p": "None"
+      },
+      "doc": "The (weighted) geometric mean of vector ``x``, with optional powers given by ``p``: .. math:: \\left(x_1^{p_1} \\cdots x_n^{p_n} \\right)^{\\frac{1}{\\mathbf{1}^Tp}} The powers ``p`` can be a ``list``, ``tuple``, or ``numpy.array`` of nonnegativ",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.geo_mean.geo_mean",
+      "importPath": "cvxpy.atoms.geo_mean.geo_mean",
+      "kind": "atom",
+      "module": "cvxpy.atoms.geo_mean",
+      "name": "geo_mean",
+      "signature": "(x, p: Optional[List[int]] = None, max_denom: int = 1024) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "A"
+        },
+        {
+          "kind": "expression",
+          "name": "X"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Geometric matrix multiplication; :math:`A \\mathbin{\\diamond} X`. For :math:`A \\in \\mathbf{R}^{m \\times n}` and :math:`X \\in \\mathbf{R}^{n \\times p}_{++}`, this atom represents .. math:: \\left[\\begin{array}{ccc} \\prod_{j=1}^n X_{j1}^{A_{1j}}",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.gmatmul.gmatmul",
+      "importPath": "cvxpy.atoms.gmatmul.gmatmul",
+      "kind": "atom",
+      "module": "cvxpy.atoms.gmatmul",
+      "name": "gmatmul",
+      "signature": "(A, X) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The harmonic mean of ``x``. Parameters ---------- x : Expression or numeric The expression whose harmonic mean is to be computed. Must have positive entries. Returns ------- Expression .. math:: \\frac{n}{\\left(\\sum_{i=1}^{n} x_i^{-1} \\right",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.harmonic_mean.harmonic_mean",
+      "importPath": "cvxpy.atoms.harmonic_mean.harmonic_mean",
+      "kind": "atom",
+      "module": "cvxpy.atoms.harmonic_mean",
+      "name": "harmonic_mean",
+      "signature": "(x)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "value"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The reciprocal of a product of the entries of a vector ``x``. Parameters ---------- x : Expression or numeric The expression whose reciprocal product is to be computed. Must have positive entries. Returns ------- Expression .. math:: \\left(",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.inv_prod.inv_prod",
+      "importPath": "cvxpy.atoms.inv_prod.inv_prod",
+      "kind": "atom",
+      "module": "cvxpy.atoms.inv_prod",
+      "name": "inv_prod",
+      "signature": "(value)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "A"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Maximum eigenvalue; :math:`\\lambda_{\\max}(A)`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.lambda_max.lambda_max",
+      "importPath": "cvxpy.atoms.lambda_max.lambda_max",
+      "kind": "atom",
+      "module": "cvxpy.atoms.lambda_max",
+      "name": "lambda_max",
+      "signature": "(A) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Minimum eigenvalue; :math:`\\lambda_{\\min}(A)`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.lambda_min.lambda_min",
+      "importPath": "cvxpy.atoms.lambda_min.lambda_min",
+      "kind": "atom",
+      "module": "cvxpy.atoms.lambda_min",
+      "name": "lambda_min",
+      "signature": "(X)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        },
+        {
+          "kind": "expression",
+          "name": "k"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Sum of the largest k eigenvalues.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.lambda_sum_largest.lambda_sum_largest",
+      "importPath": "cvxpy.atoms.lambda_sum_largest.lambda_sum_largest",
+      "kind": "atom",
+      "module": "cvxpy.atoms.lambda_sum_largest",
+      "name": "lambda_sum_largest",
+      "signature": "(X, k) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        },
+        {
+          "kind": "expression",
+          "name": "k"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Sum of the smallest k eigenvalues.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.lambda_sum_smallest.lambda_sum_smallest",
+      "importPath": "cvxpy.atoms.lambda_sum_smallest.lambda_sum_smallest",
+      "kind": "atom",
+      "module": "cvxpy.atoms.lambda_sum_smallest",
+      "name": "lambda_sum_smallest",
+      "signature": "(X, k)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Length of a vector (index of last nonzero, ones-based).",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.length.length",
+      "importPath": "cvxpy.atoms.length.length",
+      "kind": "atom",
+      "module": "cvxpy.atoms.length",
+      "name": "length",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "A"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": ":math:`\\log\\det A`",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.log_det.log_det",
+      "importPath": "cvxpy.atoms.log_det.log_det",
+      "kind": "atom",
+      "module": "cvxpy.atoms.log_det",
+      "name": "log_det",
+      "signature": "(A) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False"
+      },
+      "doc": ":math:`\\log\\sum_i e^{x_i}`",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.log_sum_exp.log_sum_exp",
+      "importPath": "cvxpy.atoms.log_sum_exp.log_sum_exp",
+      "kind": "atom",
+      "module": "cvxpy.atoms.log_sum_exp",
+      "name": "log_sum_exp",
+      "signature": "(x, axis=None, keepdims: bool = False) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        },
+        {
+          "kind": "expression",
+          "name": "P"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "tr X.T*P^-1*X",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.matrix_frac.MatrixFrac",
+      "importPath": "cvxpy.atoms.matrix_frac.MatrixFrac",
+      "kind": "atom",
+      "module": "cvxpy.atoms.matrix_frac",
+      "name": "MatrixFrac",
+      "signature": "(X, P) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False"
+      },
+      "doc": ":math:`\\max_{i,j}\\{X_{i,j}\\}`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.max.max",
+      "importPath": "cvxpy.atoms.max.max",
+      "kind": "atom",
+      "module": "cvxpy.atoms.max",
+      "name": "max",
+      "signature": "(x, axis: Optional[int] = None, keepdims: bool = False) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False"
+      },
+      "doc": ":math:`\\min{i,j}\\{X_{i,j}\\}`.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.min.min",
+      "importPath": "cvxpy.atoms.min.min",
+      "kind": "atom",
+      "module": "cvxpy.atoms.min",
+      "name": "min",
+      "signature": "(x, axis: Optional[int] = None, keepdims: bool = False) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        },
+        {
+          "default": 2,
+          "kind": "parameter",
+          "name": "p"
+        },
+        {
+          "default": 1,
+          "kind": "parameter",
+          "name": "q"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "p": "2",
+        "q": "1"
+      },
+      "doc": "Lp,q norm; :math:`(\\sum_k (\\sum_l \\lvert x_{k,l} \\rvert^p)^{q/p})^{1/q}`. Parameters ---------- X : Expression or numeric constant The matrix to take the l_{p,q} norm of. p : int or str, optional The type of inner norm. q : int or str, opti",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.mixed_norm.mixed_norm",
+      "importPath": "cvxpy.atoms.mixed_norm.mixed_norm",
+      "kind": "atom",
+      "module": "cvxpy.atoms.mixed_norm",
+      "name": "mixed_norm",
+      "signature": "(X, p: Union[int, str] = 2, q: Union[int, str] = 1)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": 2,
+          "kind": "parameter",
+          "name": "p"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Norms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False",
+        "p": "2"
+      },
+      "doc": "Wrapper on the different norm atoms. Parameters ---------- x : Expression or numeric constant The value to take the norm of. If `x` is 2D and `axis` is None, this function constructs a matrix norm. p : int or str, optional The type of norm.",
+      "examples": [
+        "norm(x, 2)",
+        "norm(A @ x - b, 2)"
+      ],
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.norm.norm",
+      "importPath": "cvxpy.atoms.norm.norm",
+      "kind": "atom",
+      "module": "cvxpy.atoms.norm",
+      "name": "norm",
+      "signature": "(x, p: Union[int, str] = 2, axis=None, keepdims: bool = False)",
+      "source": "auto+override",
+      "ui": {
+        "argumentUiHints": {
+          "p": {
+            "options": [
+              1,
+              2,
+              "inf",
+              "fro",
+              "nuc"
+            ],
+            "widget": "dropdown"
+          }
+        }
+      }
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None"
+      },
+      "doc": "The 2-norm of x. Parameters ---------- x : Expression or numeric constant The value to take the norm of. If `x` is 2D and `axis` is None, this function constructs a matrix norm. Returns ------- Expression An Expression representing the norm",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.norm.norm2",
+      "importPath": "cvxpy.atoms.norm.norm2",
+      "kind": "atom",
+      "module": "cvxpy.atoms.norm",
+      "name": "norm2",
+      "signature": "(x, axis=None)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False"
+      },
+      "doc": "An abstract base class for atoms that can be applied along an axis.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.norm1.norm1",
+      "importPath": "cvxpy.atoms.norm1.norm1",
+      "kind": "atom",
+      "module": "cvxpy.atoms.norm1",
+      "name": "norm1",
+      "signature": "(expr, axis: Optional[int] = None, keepdims: bool = False) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False"
+      },
+      "doc": "An abstract base class for atoms that can be applied along an axis.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.norm_inf.norm_inf",
+      "importPath": "cvxpy.atoms.norm_inf.norm_inf",
+      "kind": "atom",
+      "module": "cvxpy.atoms.norm_inf",
+      "name": "norm_inf",
+      "signature": "(expr, axis: Optional[int] = None, keepdims: bool = False) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "A"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Sum of the singular values.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.norm_nuc.normNuc",
+      "importPath": "cvxpy.atoms.norm_nuc.normNuc",
+      "kind": "atom",
+      "module": "cvxpy.atoms.norm_nuc",
+      "name": "normNuc",
+      "signature": "(A) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "y"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The difference :math:`x - y` with domain `\\{x, y : x > y > 0\\}`. This atom is log-log concave. Parameters ---------- x : :class:`~cvxpy.expressions.expression.Expression` An Expression. y : :class:`~cvxpy.expressions.expression.Expression` ",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.one_minus_pos.diff_pos",
+      "importPath": "cvxpy.atoms.one_minus_pos.diff_pos",
+      "kind": "atom",
+      "module": "cvxpy.atoms.one_minus_pos",
+      "name": "diff_pos",
+      "signature": "(x, y)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The difference :math:`1 - x` with domain `\\{x : 0 < x < 1\\}`. This atom is log-log concave. Parameters ---------- x : :class:`~cvxpy.expressions.expression.Expression` An Expression.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.one_minus_pos.one_minus_pos",
+      "importPath": "cvxpy.atoms.one_minus_pos.one_minus_pos",
+      "kind": "atom",
+      "module": "cvxpy.atoms.one_minus_pos",
+      "name": "one_minus_pos",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "f"
+        },
+        {
+          "kind": "expression",
+          "name": "s"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "f_recession"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "f_recession": "None"
+      },
+      "doc": "Implements the perspective transform of a convex or concave scalar expression. Uses the fact that given a cone form for the epigraph of :math:`f` via :math:`\\{ (t, x) \\in \\mathbb{R}^{n+1} : t \\geq f(x) \\}` :math:`= \\{ (t,x) : Fx + gt + e \\i",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.perspective.perspective",
+      "importPath": "cvxpy.atoms.perspective.perspective",
+      "kind": "atom",
+      "module": "cvxpy.atoms.perspective",
+      "name": "perspective",
+      "signature": "(f: 'Expression', s: 'Variable', f_recession: 'Expression' = None) -> 'None'",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The Perron-Frobenius eigenvalue of a positive matrix. For an elementwise positive matrix :math:`X`, this atom represents its spectral radius, i.e., the magnitude of its largest eigenvalue. Because :math:`X` is positive, the spectral radius ",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.pf_eigenvalue.pf_eigenvalue",
+      "importPath": "cvxpy.atoms.pf_eigenvalue.pf_eigenvalue",
+      "kind": "atom",
+      "module": "cvxpy.atoms.pf_eigenvalue",
+      "name": "pf_eigenvalue",
+      "signature": "(X) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": 2,
+          "kind": "parameter",
+          "name": "p"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        },
+        {
+          "default": 1024,
+          "kind": "parameter",
+          "name": "max_denom"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False",
+        "max_denom": "1024",
+        "p": "2"
+      },
+      "doc": "The vector p-norm, for p not equal to 1 or infinity. If given a matrix variable, ``pnorm`` will treat it as a vector, and compute the p-norm of the concatenated columns. Only accepts p values that are not equal to 1 or infinity; the norm1 a",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.pnorm.Pnorm",
+      "importPath": "cvxpy.atoms.pnorm.Pnorm",
+      "kind": "atom",
+      "module": "cvxpy.atoms.pnorm",
+      "name": "Pnorm",
+      "signature": "(x, p: int = 2, axis=None, keepdims: bool = False, max_denom: int = 1024) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": 2,
+          "kind": "parameter",
+          "name": "p"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        },
+        {
+          "default": 1024,
+          "kind": "parameter",
+          "name": "max_denom"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False",
+        "max_denom": "1024",
+        "p": "2"
+      },
+      "doc": "Factory function for a mathematical p-norm. Parameters ---------- p : numeric type or string The type of norm to construct; set this to np.inf or 'inf' to construct an infinity norm. Returns ------- Atom A norm1, norm_inf, or Pnorm object.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.pnorm.pnorm",
+      "importPath": "cvxpy.atoms.pnorm.pnorm",
+      "kind": "atom",
+      "module": "cvxpy.atoms.pnorm",
+      "name": "pnorm",
+      "signature": "(x, p: Union[int, str] = 2, axis=None, keepdims: bool = False, max_denom: int = 1024)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False"
+      },
+      "doc": "Multiply the entries of an expression. The semantics of this atom are the same as np.prod. This atom is log-log affine, but it is neither convex nor concave. Parameters ---------- expr : Expression The expression to multiply the entries of.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.prod.Prod",
+      "importPath": "cvxpy.atoms.prod.Prod",
+      "kind": "atom",
+      "module": "cvxpy.atoms.prod",
+      "name": "Prod",
+      "signature": "(expr, axis=None, keepdims: bool = False) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False"
+      },
+      "doc": "Multiply the entries of an expression. The semantics of this atom are the same as np.prod. This atom is log-log affine, but it is neither convex nor concave. Parameters ---------- expr : Expression or list[Expression, Numeric] The expressio",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.prod.prod",
+      "importPath": "cvxpy.atoms.prod.prod",
+      "kind": "atom",
+      "module": "cvxpy.atoms.prod",
+      "name": "prod",
+      "signature": "(expr, axis=None, keepdims: bool = False) -> cvxpy.atoms.prod.Prod",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False"
+      },
+      "doc": "Range of values (maximum - minimum) along an axis. The name of the function comes from the acronym for \u2018peak to peak\u2019.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.ptp.ptp",
+      "importPath": "cvxpy.atoms.ptp.ptp",
+      "kind": "atom",
+      "module": "cvxpy.atoms.ptp",
+      "name": "ptp",
+      "signature": "(x, axis=None, keepdims=False)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "P"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Abstract base class for atoms.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.quad_form.QuadForm",
+      "importPath": "cvxpy.atoms.quad_form.QuadForm",
+      "kind": "atom",
+      "module": "cvxpy.atoms.quad_form",
+      "name": "QuadForm",
+      "signature": "(x, P) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "P"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "assume_PSD"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Quadratic",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "assume_PSD": "False"
+      },
+      "doc": "Alias for :math:`x^T P x`. Parameters ---------- x : vector argument. P : matrix argument. assume_PSD : P is assumed to be PSD without checking.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.quad_form.quad_form",
+      "importPath": "cvxpy.atoms.quad_form.quad_form",
+      "kind": "atom",
+      "module": "cvxpy.atoms.quad_form",
+      "name": "quad_form",
+      "signature": "(x, P, assume_PSD: bool = False)",
+      "source": "auto+override",
+      "warning": "The second argument should be symmetric/PSD where required by CVXPY."
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "y"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": ":math:`(sum_{ij}X^2_{ij})/y`",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.quad_over_lin.quad_over_lin",
+      "importPath": "cvxpy.atoms.quad_over_lin.quad_over_lin",
+      "kind": "atom",
+      "module": "cvxpy.atoms.quad_over_lin",
+      "name": "quad_over_lin",
+      "signature": "(x, y) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "rho"
+        },
+        {
+          "kind": "expression",
+          "name": "dims"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "sys"
+        },
+        {
+          "default": "(3, 3)",
+          "kind": "parameter",
+          "name": "quad_approx"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "quad_approx": "(3, 3)",
+        "sys": "0"
+      },
+      "doc": "Returns (an approximation of) the quantum conditional entropy for a bipartite state, conditioning on system :math:`\\texttt{sys}.` Formally, if :math:`N` is the von Neumann entropy function and :math:`\\operatorname{tr}_{\\texttt{sys}}` is the",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.quantum_cond_entr.quantum_cond_entr",
+      "importPath": "cvxpy.atoms.quantum_cond_entr.quantum_cond_entr",
+      "kind": "atom",
+      "module": "cvxpy.atoms.quantum_cond_entr",
+      "name": "quantum_cond_entr",
+      "signature": "(rho: cvxpy.expressions.expression.Expression, dims: Tuple[int, int], sys: Literal[0, 1] = 0, quad_approx=(3, 3))",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        },
+        {
+          "kind": "expression",
+          "name": "Y"
+        },
+        {
+          "default": "(3, 3)",
+          "kind": "parameter",
+          "name": "quad_approx"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "quad_approx": "(3, 3)"
+      },
+      "doc": "An approximation of the quantum relative entropy between systems with (possibly un-normalized) density matrices :math:`X` and :math`Y:` .. math:: \\operatorname{tr}\\left( X ( \\log X - \\log Y ) \\right). The approximation uses a quadrature sch",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.quantum_rel_entr.quantum_rel_entr",
+      "importPath": "cvxpy.atoms.quantum_rel_entr.quantum_rel_entr",
+      "kind": "atom",
+      "module": "cvxpy.atoms.quantum_rel_entr",
+      "name": "quantum_rel_entr",
+      "signature": "(X, Y, quad_approx: Tuple[int, int] = (3, 3)) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "A"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Maximum singular value.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.sigma_max.sigma_max",
+      "importPath": "cvxpy.atoms.sigma_max.sigma_max",
+      "kind": "atom",
+      "module": "cvxpy.atoms.sigma_max",
+      "name": "sigma_max",
+      "signature": "(A) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Sign of an expression (-1 for x <= 0, +1 for x > 0).",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.sign.sign",
+      "importPath": "cvxpy.atoms.sign.sign",
+      "kind": "atom",
+      "module": "cvxpy.atoms.sign",
+      "name": "sign",
+      "signature": "(x) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "keepdims": "False"
+      },
+      "doc": "Returns the mean of x.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.stats.mean",
+      "importPath": "cvxpy.atoms.stats.mean",
+      "kind": "atom",
+      "module": "cvxpy.atoms.stats",
+      "name": "mean",
+      "signature": "(x, axis=None, keepdims=False)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "ddof"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "ddof": "0",
+        "keepdims": "False"
+      },
+      "doc": "Returns the standard deviation of x. `ddof` is the quantity to use in the Bessel correction.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.stats.std",
+      "importPath": "cvxpy.atoms.stats.std",
+      "kind": "atom",
+      "module": "cvxpy.atoms.stats",
+      "name": "std",
+      "signature": "(x, axis=None, keepdims=False, ddof=0)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "axis"
+        },
+        {
+          "default": false,
+          "kind": "parameter",
+          "name": "keepdims"
+        },
+        {
+          "default": 0,
+          "kind": "parameter",
+          "name": "ddof"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "axis": "None",
+        "ddof": "0",
+        "keepdims": "False"
+      },
+      "doc": "Returns the variance of x. `ddof` is the quantity to use in the Bessel correction.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.stats.var",
+      "importPath": "cvxpy.atoms.stats.var",
+      "kind": "atom",
+      "module": "cvxpy.atoms.stats",
+      "name": "var",
+      "signature": "(x, axis=None, keepdims=False, ddof=0)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "k"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Sum of the largest k values in the expression X",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.sum_largest.sum_largest",
+      "importPath": "cvxpy.atoms.sum_largest.sum_largest",
+      "kind": "atom",
+      "module": "cvxpy.atoms.sum_largest",
+      "name": "sum_largest",
+      "signature": "(x, k) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "x"
+        },
+        {
+          "kind": "expression",
+          "name": "k"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Sum of the smallest k values.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.sum_smallest.sum_smallest",
+      "importPath": "cvxpy.atoms.sum_smallest.sum_smallest",
+      "kind": "atom",
+      "module": "cvxpy.atoms.sum_smallest",
+      "name": "sum_smallest",
+      "signature": "(x, k)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Quadratic",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "The sum of the squares of the entries. Parameters ---------- expr: Expression The expression to take the sum of squares of. Returns ------- Expression An expression representing the sum of squares.",
+      "examples": [
+        "sum_squares(A @ x - b)"
+      ],
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.sum_squares.sum_squares",
+      "importPath": "cvxpy.atoms.sum_squares.sum_squares",
+      "kind": "atom",
+      "module": "cvxpy.atoms.sum_squares",
+      "name": "sum_squares",
+      "signature": "(expr)",
+      "source": "auto+override"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "value"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "Total variation of a vector, matrix, or list of matrices. Uses L1 norm of discrete gradients for vectors and L2 norm of discrete gradients for matrices. Parameters ---------- value : Expression or numeric constant The value to take the tota",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.total_variation.tv",
+      "importPath": "cvxpy.atoms.total_variation.tv",
+      "kind": "atom",
+      "module": "cvxpy.atoms.total_variation",
+      "name": "tv",
+      "signature": "(value, *args)",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": ":math:`\\mathrm{tr}\\left(X^{-1} \\right),` where :math:`X` is positive definite.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.tr_inv.tr_inv",
+      "importPath": "cvxpy.atoms.tr_inv.tr_inv",
+      "kind": "atom",
+      "module": "cvxpy.atoms.tr_inv",
+      "name": "tr_inv",
+      "signature": "(X) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "X"
+        },
+        {
+          "default": "()",
+          "kind": "parameter",
+          "name": "quad_approx"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Atoms",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "quad_approx": "()"
+      },
+      "doc": "Represents the von Neumann Entropy of the positive-definite matrix :math:`X,` .. math:: -\\operatorname{tr}(X \\log X). Mathematically, this is equivalent to .. math:: \\texttt{von_neumann_entr}(X) = -\\textstyle\\sum_{i=1}^n \\lambda_i \\log \\lam",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.atoms.von_neumann_entr.von_neumann_entr",
+      "importPath": "cvxpy.atoms.von_neumann_entr.von_neumann_entr",
+      "kind": "atom",
+      "module": "cvxpy.atoms.von_neumann_entr",
+      "name": "von_neumann_entr",
+      "signature": "(X, quad_approx: Tuple[int, ...] = ()) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "value"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "name"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Structural",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "name": "None"
+      },
+      "doc": "A constant value. Raw numerical constants such as Python primitive types or NumPy ndarrays are implicitly cast to constants via Expression operator overloading. For example, if ``x`` is an expression and``c`` is a raw constant, then ``x + c",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.expressions.constants.constant.Constant",
+      "importPath": "cvxpy.expressions.constants.constant.Constant",
+      "kind": "structural",
+      "module": "cvxpy.expressions.constants.constant",
+      "name": "Constant",
+      "signature": "(value, name: Optional[str] = None) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "default": "()",
+          "kind": "parameter",
+          "name": "shape"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "name"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "value"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "id"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Structural",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "id": "None",
+        "name": "None",
+        "shape": "()",
+        "value": "None"
+      },
+      "doc": "Parameters in optimization problems. Parameters are constant expressions whose value may be specified after problem creation. The only way to modify a problem after its creation is through parameters. For example, you might choose to declar",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.expressions.constants.parameter.Parameter",
+      "importPath": "cvxpy.expressions.constants.parameter.Parameter",
+      "kind": "structural",
+      "module": "cvxpy.expressions.constants.parameter",
+      "name": "Parameter",
+      "signature": "(shape: 'int | tuple[int, ...]' = (), name: 'str | None' = None, value=None, id=None, **kwargs) -> 'None'",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "default": "()",
+          "kind": "parameter",
+          "name": "shape"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "name"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "var_id"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Structural",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "name": "None",
+        "shape": "()",
+        "var_id": "None"
+      },
+      "doc": "The optimization variables in a problem.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.expressions.variable.Variable",
+      "importPath": "cvxpy.expressions.variable.Variable",
+      "kind": "structural",
+      "module": "cvxpy.expressions.variable",
+      "name": "Variable",
+      "signature": "(shape: 'int | Iterable[int]' = (), name: 'str | None' = None, var_id: 'int | None' = None, **kwargs: 'Any')",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Structural",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "An optimization objective for maximization. Parameters ---------- expr : Expression The expression to maximize. Must be a scalar. Raises ------ ValueError If expr is not a scalar.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.problems.objective.Maximize",
+      "importPath": "cvxpy.problems.objective.Maximize",
+      "kind": "structural",
+      "module": "cvxpy.problems.objective",
+      "name": "Maximize",
+      "signature": "(expr) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "expr"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Structural",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {},
+      "doc": "An optimization objective for minimization. Parameters ---------- expr : Expression The expression to minimize. Must be a scalar. Raises ------ ValueError If expr is not a scalar.",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.problems.objective.Minimize",
+      "importPath": "cvxpy.problems.objective.Minimize",
+      "kind": "structural",
+      "module": "cvxpy.problems.objective",
+      "name": "Minimize",
+      "signature": "(expr) -> None",
+      "source": "auto"
+    },
+    {
+      "arguments": [
+        {
+          "kind": "expression",
+          "name": "objective"
+        },
+        {
+          "default": null,
+          "kind": "parameter",
+          "name": "constraints"
+        }
+      ],
+      "availableIn": {
+        "local": true,
+        "pyodide": "unknown"
+      },
+      "callable": true,
+      "category": "Structural",
+      "cvxpyVersion": "1.7.5",
+      "defaultValues": {
+        "constraints": "None"
+      },
+      "doc": "A convex optimization problem. Problems are immutable, save for modification through the specification of :class:`~cvxpy.expressions.constants.parameters.Parameter` Arguments --------- objective : Minimize or Maximize The problem's objectiv",
+      "generatedAt": "1970-01-01T00:00:00Z",
+      "id": "cvxpy.problems.problem.Problem",
+      "importPath": "cvxpy.problems.problem.Problem",
+      "kind": "structural",
+      "module": "cvxpy.problems.problem",
+      "name": "Problem",
+      "signature": "(objective: 'Union[Minimize, Maximize]', constraints: 'Optional[List[Constraint]]' = None) -> 'None'",
+      "source": "auto"
+    }
+  ]
+}

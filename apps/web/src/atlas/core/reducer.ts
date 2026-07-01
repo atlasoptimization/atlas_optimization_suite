@@ -7,6 +7,7 @@ import {
   createAtlasWorkspaceReference,
   defineAtlasModelObject,
   deleteAtlasCanonicalObject,
+  clearAtlasDesk,
   deleteAtlasCard,
   deleteAtlasProperty,
   deleteAtlasTag,
@@ -51,7 +52,17 @@ export function atlasReducer(
     case "card.createFromTemplate":
       return addAtlasCardFromTemplate(state, action.templateId);
     case "modelObject.define":
-      return defineAtlasModelObject(state, action.objectKind, action.name, action.shape, action.atomSpec, action.position);
+      return defineAtlasModelObject(
+        state,
+        action.objectKind,
+        action.name,
+        action.shape,
+        action.atomSpec,
+        action.position,
+        action.attributes,
+        action.value,
+        action.notes
+      );
     case "workspaceReference.create":
       return createAtlasWorkspaceReference(state, action.modelObjectId, action.position);
     case "workspaceReference.duplicate":
@@ -63,13 +74,25 @@ export function atlasReducer(
     case "connection.create":
       return addAtlasConnection(state, action.source, action.target, action.semanticKind);
     case "connection.delete":
-      return deleteAtlasConnection(state, action.connectionId);
+      return {
+        ...deleteAtlasConnection(state, action.connectionId),
+        selectedConnectionId: state.selectedConnectionId === action.connectionId ? null : state.selectedConnectionId
+      };
+    case "connection.select":
+      return {
+        ...state,
+        selectedCardId: null,
+        selectedGroupId: null,
+        selectedQueryId: null,
+        selectedConnectionId: action.connectionId
+      };
     case "card.select":
       return {
         ...state,
         selectedCardId: action.cardId,
         selectedGroupId: null,
-        selectedQueryId: null
+        selectedQueryId: null,
+        selectedConnectionId: null
       };
     case "card.update":
       return updateAtlasCardDetails(state, action.cardId, action.patch);
@@ -86,7 +109,8 @@ export function atlasReducer(
         ...state,
         selectedCardId: null,
         selectedGroupId: action.groupId,
-        selectedQueryId: null
+        selectedQueryId: null,
+        selectedConnectionId: null
       };
     case "group.update":
       return updateAtlasGroup(state, action.groupId, action.patch);
@@ -99,7 +123,8 @@ export function atlasReducer(
         ...state,
         selectedCardId: null,
         selectedGroupId: null,
-        selectedQueryId: action.queryId
+        selectedQueryId: action.queryId,
+        selectedConnectionId: null
       };
     case "query.update":
       return updateAtlasQuery(state, action.queryId, action.patch);
@@ -180,6 +205,8 @@ export function atlasReducer(
       return updateConstraintConfig(state, action.cardId, action.patch);
     case "workbench.clear":
       return EMPTY_ATLAS_STATE;
+    case "workbench.clearDesk":
+      return clearAtlasDesk(state);
     case "workbench.load":
       return action.state;
   }

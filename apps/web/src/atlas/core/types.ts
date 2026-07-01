@@ -46,23 +46,34 @@ export type AtlasProperty = {
 
 export type AtlasDecisionMetadata = {
   variableType: "continuous" | "integer" | "binary";
-  shape: "scalar";
+  shape: "scalar" | "vector" | "matrix" | "custom";
   lowerBound?: number | null;
   upperBound?: number | null;
   initialValue?: number | null;
+  attributes?: Record<string, boolean>;
 };
 
 export type AtlasAtomMetadata = {
+  symbolId?: string;
   name: string;
+  kind?: string;
   importPath: string;
   displayName?: string | null;
   signature: string;
   argumentNames: string[];
+  arguments?: Array<{
+    name: string;
+    kind?: string;
+    default?: unknown;
+    ui?: Record<string, unknown> | null;
+  }>;
   defaultValues?: Record<string, string>;
   doc?: string;
   category?: string;
   module?: string;
   callable?: boolean;
+  examples?: string[];
+  symbol?: string | null;
   uiOverrides?: Record<string, unknown> | null;
 };
 
@@ -76,6 +87,7 @@ export type AtlasAtomInput = {
 };
 
 export type AtlasAtomConfig = {
+  symbolId?: string;
   atomName: string;
   importPath: string;
   displayName: string;
@@ -223,6 +235,17 @@ export type AtlasConnectionEndpoint = {
   objectId?: string;
   port?: string;
   slot?: string;
+  portType?: string;
+  slotType?: string;
+};
+
+export type AtlasProjectSettings = {
+  defaultBackend: string;
+  defaultSolver: string;
+  autoValidate: boolean;
+  showAdvancedCvxpy: boolean;
+  numberFormat: "compact" | "scientific" | "fixed";
+  showDiagnosticsOnCanvas: boolean;
 };
 
 export type AtlasConnection = {
@@ -245,18 +268,31 @@ export type AtlasWorkbenchState = {
   selectedCardId: string | null;
   selectedGroupId: string | null;
   selectedQueryId: string | null;
+  selectedConnectionId?: string | null;
+  settings?: AtlasProjectSettings;
 };
 
 export type AtlasAction =
   | { type: "card.create"; cardType: AtlasCardType }
   | { type: "card.createFromTemplate"; templateId: string }
-  | { type: "modelObject.define"; objectKind: "variable" | "parameter" | "constant" | "atom" | "constraint" | "objective" | "problem"; name: string; shape?: "scalar" | "vector" | "matrix"; atomSpec?: AtlasAtomMetadata; position?: AtlasPosition }
+  | {
+      type: "modelObject.define";
+      objectKind: "variable" | "parameter" | "constant" | "atom" | "constraint" | "objective" | "problem";
+      name: string;
+      shape?: unknown;
+      atomSpec?: AtlasAtomMetadata;
+      position?: AtlasPosition;
+      attributes?: Record<string, boolean>;
+      value?: unknown;
+      notes?: string;
+    }
   | { type: "workspaceReference.create"; modelObjectId: string; position?: AtlasPosition }
   | { type: "workspaceReference.duplicate"; cardId: string; position?: AtlasPosition }
   | { type: "modelObject.delete"; modelObjectId: string }
   | { type: "modelObject.rename"; modelObjectId: string; title: string }
   | { type: "connection.create"; source: AtlasConnectionEndpoint; target: AtlasConnectionEndpoint; semanticKind?: string }
   | { type: "connection.delete"; connectionId: string }
+  | { type: "connection.select"; connectionId: string | null }
   | { type: "card.select"; cardId: string | null }
   | { type: "card.update"; cardId: string; patch: Partial<Pick<AtlasCard, "title" | "notes" | "decision" | "data">> }
   | { type: "atom.input.update"; cardId: string; inputKind: "positional" | "keyword"; inputId: string; patch: Partial<AtlasAtomInput> }
@@ -355,5 +391,6 @@ export type AtlasAction =
       cardId: string;
       patch: Partial<AtlasConstraintConfig>;
     }
+  | { type: "workbench.clearDesk" }
   | { type: "workbench.clear" }
   | { type: "workbench.load"; state: AtlasWorkbenchState };

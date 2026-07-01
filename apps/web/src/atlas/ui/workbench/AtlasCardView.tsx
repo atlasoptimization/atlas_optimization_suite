@@ -8,6 +8,7 @@ import type { AtlasCard, AtlasCardModuleKind, AtlasCardQuery, AtlasCardType } fr
 import type { AtlasRuntimeDiagnostic } from "../../core/runtimeDiagnostics";
 import type { AtlasConnectionEndpoint } from "../../core/types";
 import { AtlasAtomNode } from "./AtlasAtomNode";
+import { getNodeTemplate } from "../../core/nodeTemplates";
 
 type AtlasCardViewProps = {
   card: AtlasCard;
@@ -63,8 +64,13 @@ export function AtlasCardView({
       : null;
   const objectiveStructure = card.type === "objective" ? objectivePreview(card, allCards) : null;
   const constraintStructure = card.type === "constraint" ? constraintPreview(card, allCards) : null;
-  const nodePorts = getNodePorts(card);
-  const nodeSlots = getNodeSlots(card);
+  const atomExpressionPreview = card.atomConfig ? atomPreview(card, allCards) : null;
+  const nodeTemplate = getNodeTemplate(card);
+  const nodePorts = nodeTemplate.outputPorts(card).map((port) => ({
+    ...port,
+    label: port.id === "expression" && atomExpressionPreview ? atomExpressionPreview : port.label
+  }));
+  const nodeSlots = nodeTemplate.inputSlots(card, []);
 
   return (
     <article
@@ -125,7 +131,10 @@ export function AtlasCardView({
                   className="atlas-node-slot"
                   onPointerDown={(event) => event.stopPropagation()}
                   onDragOver={(event) => {
-                    if (event.dataTransfer.types.includes("application/x-atlas-output-port")) {
+                    if (
+                      event.dataTransfer.types.includes("application/x-atlas-output-port") ||
+                      event.dataTransfer.types.includes("application/x-atlas-model-object")
+                    ) {
                       event.preventDefault();
                     }
                   }}
@@ -161,7 +170,8 @@ export function AtlasCardView({
                       JSON.stringify({
                         nodeId: card.id,
                         objectId: card.modelObjectId ?? card.id,
-                        port: port.id
+                        port: port.id,
+                        portType: port.outputType
                       })
                     );
                     event.dataTransfer.effectAllowed = "link";
@@ -198,7 +208,7 @@ export function AtlasCardView({
           {card.properties.length > 3 && <span>+{card.properties.length - 3} more</span>}
         </div>
       )}
-      {card.atomConfig && <AtlasAtomNode atomConfig={card.atomConfig} metadata={metadata} />}
+      {card.atomConfig && <AtlasAtomNode atomConfig={card.atomConfig} metadata={metadata} preview={atomExpressionPreview ?? undefined} />}
       {(card.modules ?? []).length > 0 && (
         <div className="atlas-module-layer" aria-label={`${card.title} attached modules`}>
           {(card.modules ?? []).map((module) => (
@@ -329,27 +339,27 @@ export function AtlasCardView({
   );
 }
 
-function getNodePorts(card: AtlasCard) {
+function getNodePorts(card: AtlasCard, atomExpressionPreview: string | null = null) {
   const kind = card.modelObjectKind ?? cardTypeToModelKind(card.type);
   if (kind === "variable" || kind === "parameter" || kind === "constant") {
-    return [{ id: "expression", label: "expr out" }];
+    return [{ id: "expression", label: card.title }];
   }
   if (kind === "atom" || kind === "expression") {
-    return [{ id: "expression", label: "expr out" }];
+    return [{ id: "expression", label: atomExpressionPreview ?? card.atomConfig?.outputName ?? card.title }];
   }
   return [];
 }
 
-function getNodeSlots(card: AtlasCard) {
+function getNodeSlots(card: AtlasCard, allCards: AtlasCard[]) {
   const kind = card.modelObjectKind ?? cardTypeToModelKind(card.type);
   if (kind === "atom" || kind === "expression") {
     const positionalSlots = card.atomConfig?.positionalInputs.map((input, index) => ({
       id: `arg${index}`,
-      label: input.name || `arg ${index + 1}`
+      label: connectedInputLabel(input, allCards) ?? input.name ?? `arg ${index + 1}`
     })) ?? [];
     const keywordSlots = Object.values(card.atomConfig?.keywordInputs ?? {})
       .filter((input) => input.kind === "reference")
-      .map((input) => ({ id: input.name, label: input.name }));
+      .map((input) => ({ id: input.name, label: connectedInputLabel(input, allCards) ?? input.name }));
     return positionalSlots.length > 0 || keywordSlots.length > 0
       ? [...positionalSlots, ...keywordSlots]
       : [
@@ -378,9 +388,34 @@ function getNodeSlots(card: AtlasCard) {
   return [];
 }
 
+function atomPreview(card: AtlasCard, allCards: AtlasCard[]) {
+  if (!card.atomConfig) return null;
+  const positional = card.atomConfig.positionalInputs.map((input) => connectedInputLabel(input, allCards) ?? input.name);
+  const keywords = Object.values(card.atomConfig.keywordInputs).map((input) =>
+    input.kind === "literal"
+      ? `${input.name}=${formatLiteralValue(input.value)}`
+      : `${input.name}=${connectedInputLabel(input, allCards) ?? "?"}`
+  );
+  const args = [...positional, ...keywords].filter(Boolean);
+  return `${card.atomConfig.displayName || card.atomConfig.atomName}(${args.join(", ")})`;
+}
+
+function connectedInputLabel(input: { objectId?: string; value?: unknown }, allCards: AtlasCard[]) {
+  if (!input.objectId) return null;
+  return allCards.find((card) => (card.modelObjectId ?? card.id) === input.objectId)?.title ?? input.objectId;
+}
+
+function formatLiteralValue(value: unknown) {
+  if (value === null || value === undefined) return "?";
+  return String(value);
+}
+
 function readPortDrag(event: DragEvent<HTMLElement>): AtlasConnectionEndpoint | null {
   const raw = event.dataTransfer.getData("application/x-atlas-output-port");
-  if (!raw) return null;
+  if (!raw) {
+    const modelObjectId = event.dataTransfer.getData("application/x-atlas-model-object");
+    return modelObjectId ? { objectId: modelObjectId, port: "expression" } : null;
+  }
   try {
     const parsed = JSON.parse(raw) as AtlasConnectionEndpoint;
     return parsed.nodeId || parsed.objectId ? parsed : null;

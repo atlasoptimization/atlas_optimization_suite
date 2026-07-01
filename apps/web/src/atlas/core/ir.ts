@@ -1,5 +1,6 @@
 import { normalizeAtlasState } from "../storage/localAtlasStorage";
-import { getCanonicalModelObjects } from "./cards";
+import { getCanonicalModelObjects, getWorkspaceCards } from "./cards";
+import { CURRENT_ATLAS_IR_SCHEMA_VERSION, migrateIr } from "./atlasIr/migrations";
 import type {
   AtlasCard,
   AtlasCardQuery,
@@ -13,7 +14,7 @@ import type {
   AtlasWorkbenchState
 } from "./types";
 
-export const ATLAS_IR_SCHEMA_VERSION = "0.2-cvxpy";
+export const ATLAS_IR_SCHEMA_VERSION = CURRENT_ATLAS_IR_SCHEMA_VERSION;
 
 export type AtlasIRMetadata = {
   schemaVersion: typeof ATLAS_IR_SCHEMA_VERSION;
@@ -65,6 +66,7 @@ export type AtlasConstantObject = AtlasModelObjectBase & {
 
 export type AtlasAtomObject = AtlasModelObjectBase & {
   kind: "atom";
+  symbolId?: string;
   atomId?: string;
   atomName: string;
   importPath: string;
@@ -195,12 +197,20 @@ export type AtlasIRViews = {
   [key: string]: unknown;
 };
 
+export type AtlasIRWorkspace = {
+  nodes: AtlasWorkspaceNode[];
+  connections: AtlasConnection[];
+  camera?: Record<string, unknown>;
+  openPanels?: Record<string, unknown>;
+};
+
 export type AtlasIR = {
   schemaVersion: typeof ATLAS_IR_SCHEMA_VERSION;
   metadata: AtlasIRMetadata;
   modelObjects: AtlasModelObjects;
   workspaceNodes: AtlasWorkspaceNode[];
   connections: AtlasConnection[];
+  workspace?: AtlasIRWorkspace;
   views?: AtlasIRViews;
   future?: Record<string, unknown>;
   /** Compatibility payload for the current semantic-card evaluator/compiler. */
@@ -230,11 +240,20 @@ export function exportAtlasIR(
       exportedAt: metadata.exportedAt ?? new Date().toISOString()
     },
     modelObjects,
-    workspaceNodes: state.cards.map((card) => cardToWorkspaceNode(card)),
+    workspaceNodes: getWorkspaceCards(state).map((card) => cardToWorkspaceNode(card)),
     connections: [
       ...(state.connections ?? []).map((connection) => copyJson(connection)),
       ...createConnectionsFromState(state)
     ],
+    workspace: {
+      nodes: getWorkspaceCards(state).map((card) => cardToWorkspaceNode(card)),
+      connections: [
+        ...(state.connections ?? []).map((connection) => copyJson(connection)),
+        ...createConnectionsFromState(state)
+      ],
+      camera: {},
+      openPanels: {}
+    },
     views: {
       groups: state.groups.map((group) => ({
         ...group,
@@ -262,12 +281,14 @@ export function serializeAtlasIR(ir: AtlasIR) {
 }
 
 export function importAtlasIR(value: unknown): AtlasIRImportResult {
-  const diagnostics = validateAtlasIR(value);
+  const migration = migrateIr(value);
+  const diagnostics = [...migration.diagnostics.filter((diagnostic) => diagnostic.startsWith("Unsupported") || diagnostic.includes("must be"))];
+  diagnostics.push(...validateAtlasIR(migration.ir));
   if (diagnostics.length > 0) {
     return { state: normalizeAtlasState({ cards: [] }), diagnostics };
   }
 
-  const ir = value as AtlasIR;
+  const ir = migration.ir as AtlasIR;
   const cards = Array.isArray(ir.cards) && ir.cards.length > 0
     ? ir.cards
     : cardsFromWorkspaceIR(ir);
@@ -279,13 +300,19 @@ export function importAtlasIR(value: unknown): AtlasIRImportResult {
       connections: Array.isArray(ir.connections) ? ir.connections.map((connection) => copyJson(connection)) : [],
       selectedCardId: null,
       selectedGroupId: null,
-      selectedQueryId: null
+      selectedQueryId: null,
+      selectedConnectionId: null
     }),
     diagnostics: []
   };
 }
 
 export function validateAtlasIR(value: unknown): string[] {
+  const migration = migrateIr(value);
+  if (migration.diagnostics.some((diagnostic) => diagnostic.startsWith("Unsupported") || diagnostic.includes("must be"))) {
+    return migration.diagnostics;
+  }
+  value = migration.ir;
   const diagnostics: string[] = [];
   if (!isRecord(value)) return ["Atlas IR must be a JSON object."];
   if (value.schemaVersion !== ATLAS_IR_SCHEMA_VERSION) {
@@ -416,6 +443,7 @@ function createModelObjectsFromState(state: AtlasWorkbenchState): AtlasModelObje
         name: card.title,
         notes: card.notes,
         sourceCardId: card.id,
+        symbolId: card.atomConfig?.symbolId ?? card.atomSpec?.symbolId,
         atomId: card.atomConfig?.importPath ?? card.atomSpec?.importPath ?? (card.functionKind ? `atlas.compat.${card.functionKind}` : undefined),
         atomName: card.atomConfig?.atomName ?? card.atomSpec?.name ?? card.title,
         importPath: card.atomConfig?.importPath ?? card.atomSpec?.importPath ?? `cvxpy.${card.atomSpec?.name ?? card.title}`,
@@ -471,7 +499,7 @@ function cardToWorkspaceNode(card: AtlasCard): AtlasWorkspaceNode {
     displayState: {
       title: card.title,
       cardType: card.type,
-      workspaceRole: card.workspaceRole ?? "definition",
+      workspaceRole: "reference",
       collapsed: false
     }
   };
@@ -514,10 +542,22 @@ function createConnectionsFromState(state: AtlasWorkbenchState): AtlasConnection
 
 function cardsFromWorkspaceIR(ir: AtlasIR): AtlasCard[] {
   const objects = new Map(flattenModelObjects(ir.modelObjects).map((object) => [object.id, object]));
-  return ir.workspaceNodes.flatMap((node) => {
+  const definitions = Array.from(objects.values()).map((object, index) => modelObjectToDefinitionCard(object, index));
+  const references = ir.workspaceNodes.flatMap((node) => {
     const object = objects.get(node.modelObjectId);
     if (!object) return [];
-    return [modelObjectToCard(object, node)];
+    return [modelObjectToCard(object, { ...node, displayState: { ...node.displayState, workspaceRole: "reference" } })];
+  });
+  return [...definitions, ...references];
+}
+
+function modelObjectToDefinitionCard(object: AtlasModelObject, index: number): AtlasCard {
+  return modelObjectToCard(object, {
+    id: `definition-${object.id}`,
+    modelObjectId: object.id,
+    modelObjectKind: object.kind,
+    position: { x: 80, y: 80 + index * 24 },
+    displayState: { title: object.name, workspaceRole: "definition" }
   });
 }
 
@@ -530,7 +570,7 @@ function modelObjectToCard(object: AtlasModelObject, node: AtlasWorkspaceNode): 
     modelObjectKind: object.kind,
     modelObjectShape: object.kind === "variable" || object.kind === "parameter" ? object.shape : undefined,
     modelObjectValue: object.kind === "constant" ? object.value : undefined,
-    workspaceRole: node.displayState.workspaceRole === "reference" ? "reference" : "definition",
+    workspaceRole: node.displayState.workspaceRole === "definition" ? "definition" : "reference",
     title: node.displayState.title ?? object.name,
     position: { ...node.position },
     tags: [],
@@ -543,6 +583,7 @@ function modelObjectToCard(object: AtlasModelObject, node: AtlasWorkspaceNode): 
       taggedSum: object.taggedSum,
       atomSpec: object.atomSpec,
       atomConfig: {
+        symbolId: object.symbolId ?? object.atomSpec?.symbolId,
         atomName: object.atomName,
         importPath: object.importPath,
         displayName: object.displayName,

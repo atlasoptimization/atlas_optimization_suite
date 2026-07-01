@@ -28,6 +28,24 @@ export type AtlasValidationResponse = AtlasBackendResponse & {
   metadata?: Record<string, AtlasCvxpyObjectMetadata>;
 };
 
+export type AtlasBackendCapabilities = {
+  backendId: string;
+  backendLabel: string;
+  cvxpyAvailable: boolean;
+  cvxpyVersion?: string | null;
+  availableSolvers: string[];
+  supportsValidate: boolean;
+  supportsGenerateCode: boolean;
+  supportsSolve: boolean;
+  supportsEvaluate: boolean;
+  supportsMilp?: boolean;
+  supportsSymbolCatalog?: boolean;
+  symbolCatalogVersion?: string | null;
+  symbolCatalogHash?: string | null;
+  maxRecommendedVariables?: number | null;
+  warnings?: string[];
+};
+
 export function getAtlasBackendBaseUrl() {
   const envUrl = import.meta.env.VITE_ATLAS_BACKEND_URL as string | undefined;
   return (envUrl || DEFAULT_ATLAS_BACKEND_URL).replace(/\/$/, "");
@@ -35,6 +53,10 @@ export function getAtlasBackendBaseUrl() {
 
 export async function checkAtlasBackendHealth(baseUrl = getAtlasBackendBaseUrl()) {
   return requestAtlasBackend<{ status: string }>("/health", { method: "GET" }, baseUrl);
+}
+
+export async function fetchAtlasBackendCapabilities(baseUrl = getAtlasBackendBaseUrl()) {
+  return requestAtlasBackend<AtlasBackendCapabilities>("/capabilities", { method: "GET" }, baseUrl);
 }
 
 export async function fetchCvxpyAtoms(baseUrl = getAtlasBackendBaseUrl()) {

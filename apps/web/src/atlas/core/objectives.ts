@@ -106,7 +106,7 @@ export function objectivePreview(card: AtlasCard, cards: AtlasCard[]) {
   const objective = createObjectiveConfig(card.objective);
   const functionNames = objective.terms.map((term) => {
     const functionCard = term.functionCardId
-      ? cards.find((candidate) => candidate.id === term.functionCardId)
+      ? cards.find((candidate) => candidate.id === term.functionCardId || candidate.modelObjectId === term.functionCardId)
       : null;
     return functionCard?.title ?? "Unassigned function";
   });
@@ -132,7 +132,9 @@ export function getObjectiveDependencySummary(
     .map((term) =>
       term.functionCardId
         ? cards.find(
-            (candidate) => candidate.id === term.functionCardId && candidate.type === "function"
+            (candidate) =>
+              (candidate.id === term.functionCardId || candidate.modelObjectId === term.functionCardId) &&
+              candidate.type === "function"
           ) ?? null
         : null
     )

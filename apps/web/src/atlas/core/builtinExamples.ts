@@ -1,4 +1,4 @@
-import { importAtlasIR, type AtlasIR } from "./ir";
+import { ATLAS_IR_SCHEMA_VERSION, importAtlasIR, type AtlasIR } from "./ir";
 import type { AtlasWorkbenchState } from "./types";
 
 export type AtlasBuiltinExampleId = "tiny-lp" | "least-squares" | "ridge-regression";
@@ -21,7 +21,7 @@ export const ATLAS_BUILTIN_EXAMPLES: AtlasBuiltinExample[] = [
   },
   {
     id: "least-squares",
-    title: "Least squares",
+    title: "Showcase: Least Squares",
     description: "Minimize ||A x - b||_2^2 for a three-row design matrix.",
     expected: "x approximately [1.1667, 0.5]",
     ir: leastSquaresIr(false)
@@ -47,9 +47,9 @@ export function loadAtlasBuiltinExample(id: AtlasBuiltinExampleId): AtlasWorkben
 
 function baseIr(title: string): AtlasIR {
   return {
-    schemaVersion: "0.2-cvxpy",
+    schemaVersion: ATLAS_IR_SCHEMA_VERSION,
     metadata: {
-      schemaVersion: "0.2-cvxpy",
+      schemaVersion: ATLAS_IR_SCHEMA_VERSION,
       source: "atlas-gui",
       title,
       exportedAt: "2026-01-01T00:00:00.000Z"

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import importlib
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from .cvxpy_registry import discover_cvxpy_atoms
@@ -24,6 +26,11 @@ ATLAS_OPERATOR_PATHS = {
     "atlas.expression.subtract",
     "atlas.expression.multiply",
     "atlas.expression.matmul",
+    "atlas.operator.add",
+    "atlas.operator.subtract",
+    "atlas.operator.multiply",
+    "atlas.operator.matmul",
+    "atlas.operator.negate",
 }
 
 
@@ -68,9 +75,7 @@ class CvxpyInspector:
         self.compiled: dict[str, CompiledObject] = {}
         self.objects = {model_object.id: model_object for model_object in ir.modelObjects.all_objects()}
         self.nodes = {node.id: node for node in ir.workspaceNodes}
-        self.allowed_atoms = discover_cvxpy_atoms()
-        self.allowed_import_paths = {atom.importPath for atom in self.allowed_atoms}
-        self.allowed_names = {atom.name for atom in self.allowed_atoms}
+        self.allowed_import_paths, self.allowed_names = load_generated_symbol_allowlist()
 
     def inspect(self) -> CvxpyInspectionResult:
         """Inspect all compilable objects and workspace references."""
@@ -389,15 +394,48 @@ def resolve_registered_cvxpy_callable(
 def atlas_operator(import_path: str):
     """Return internal structural expression operators used where CVXPY has Python syntax."""
 
-    if import_path == "atlas.expression.add":
+    if import_path in {"atlas.expression.add", "atlas.operator.add"}:
         return lambda left, right: left + right
-    if import_path == "atlas.expression.subtract":
+    if import_path in {"atlas.expression.subtract", "atlas.operator.subtract"}:
         return lambda left, right: left - right
-    if import_path == "atlas.expression.multiply":
+    if import_path in {"atlas.expression.multiply", "atlas.operator.multiply"}:
         return lambda left, right: left * right
-    if import_path == "atlas.expression.matmul":
+    if import_path in {"atlas.expression.matmul", "atlas.operator.matmul"}:
         return lambda left, right: left @ right
+    if import_path == "atlas.operator.negate":
+        return lambda value: -value
     return None
+
+
+def load_generated_symbol_allowlist() -> tuple[set[str], set[str]]:
+    """Load generated symbol allowlist, falling back to runtime atom discovery."""
+
+    path = Path(__file__).resolve().parents[1] / "atlas_opt_core" / "generated" / "cvxpy_symbols.generated.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        symbols = data.get("symbols", [])
+        import_paths = {
+            symbol["importPath"]
+            for symbol in symbols
+            if isinstance(symbol, dict) and isinstance(symbol.get("importPath"), str)
+        }
+        names = {
+            symbol["name"]
+            for symbol in symbols
+            if isinstance(symbol, dict) and isinstance(symbol.get("name"), str)
+        }
+        import_paths.update(
+            symbol["id"]
+            for symbol in symbols
+            if isinstance(symbol, dict) and isinstance(symbol.get("id"), str) and str(symbol.get("id")).startswith("atlas.operator.")
+        )
+        if import_paths or names:
+            return import_paths, names
+    except Exception:
+        pass
+
+    atoms = discover_cvxpy_atoms()
+    return {atom.importPath for atom in atoms}, {atom.name for atom in atoms}
 
 
 def slot_sort_key(slot: str) -> tuple[int, str]:

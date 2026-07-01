@@ -1,15 +1,27 @@
 export type AtlasAtomSpec = {
+  symbolId?: string;
   name: string;
+  kind?: string;
   importPath: string;
   displayName?: string | null;
   signature: string;
   argumentNames: string[];
+  arguments?: AtlasAtomArgumentSpec[];
   defaultValues: Record<string, string>;
   doc: string;
   category: string;
   module: string;
   callable: boolean;
+  examples?: string[];
+  symbol?: string | null;
   uiOverrides?: Record<string, unknown> | null;
+};
+
+export type AtlasAtomArgumentSpec = {
+  name: string;
+  kind?: string;
+  default?: unknown;
+  ui?: Record<string, unknown> | null;
 };
 
 export const FALLBACK_ATOM_SPECS: AtlasAtomSpec[] = [

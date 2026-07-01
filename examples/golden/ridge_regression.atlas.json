@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "0.3.0",
+  "metadata": { "schemaVersion": "0.3.0", "source": "atlas-gui", "title": "Ridge Regression", "exportedAt": "2026-01-01T00:00:00Z" },
+  "modelObjects": {
+    "variables": [{ "id": "var-x", "kind": "variable", "name": "x", "shape": [2] }],
+    "parameters": [],
+    "constants": [
+      { "id": "const-A", "kind": "constant", "name": "A", "value": [[1, 0], [1, 1], [1, 2]] },
+      { "id": "const-b", "kind": "constant", "name": "b", "value": [1, 2, 2] },
+      { "id": "const-lambda", "kind": "constant", "name": "lambda", "value": 1 }
+    ],
+    "atoms": [
+      { "id": "atom-Ax", "kind": "atom", "name": "A @ x", "atomName": "matmul", "importPath": "atlas.expression.matmul", "displayName": "A @ x", "positionalInputs": [{ "id": "input-A", "name": "A", "kind": "reference", "objectId": "const-A" }, { "id": "input-x", "name": "x", "kind": "reference", "objectId": "var-x" }], "keywordInputs": {} },
+      { "id": "atom-residual", "kind": "atom", "name": "A @ x - b", "atomName": "subtract", "importPath": "atlas.expression.subtract", "displayName": "A @ x - b", "positionalInputs": [{ "id": "input-Ax", "name": "Ax", "kind": "reference", "objectId": "atom-Ax" }, { "id": "input-b", "name": "b", "kind": "reference", "objectId": "const-b" }], "keywordInputs": {} },
+      { "id": "atom-loss", "kind": "atom", "name": "sum_squares", "atomName": "sum_squares", "importPath": "cvxpy.sum_squares", "displayName": "sum_squares", "positionalInputs": [{ "id": "input-residual", "name": "x", "kind": "reference", "objectId": "atom-residual" }], "keywordInputs": {} },
+      { "id": "atom-penalty", "kind": "atom", "name": "sum_squares(x)", "atomName": "sum_squares", "importPath": "cvxpy.sum_squares", "displayName": "sum_squares(x)", "positionalInputs": [{ "id": "input-x", "name": "x", "kind": "reference", "objectId": "var-x" }], "keywordInputs": {} },
+      { "id": "atom-scaled-penalty", "kind": "atom", "name": "lambda penalty", "atomName": "multiply", "importPath": "atlas.expression.multiply", "displayName": "lambda penalty", "positionalInputs": [{ "id": "input-lambda", "name": "lambda", "kind": "reference", "objectId": "const-lambda" }, { "id": "input-penalty", "name": "penalty", "kind": "reference", "objectId": "atom-penalty" }], "keywordInputs": {} },
+      { "id": "atom-ridge-objective", "kind": "atom", "name": "loss + penalty", "atomName": "add", "importPath": "atlas.expression.add", "displayName": "loss + penalty", "positionalInputs": [{ "id": "input-loss", "name": "loss", "kind": "reference", "objectId": "atom-loss" }, { "id": "input-scaled", "name": "scaled", "kind": "reference", "objectId": "atom-scaled-penalty" }], "keywordInputs": {} }
+    ],
+    "expressions": [],
+    "constraints": [],
+    "objectives": [{ "id": "objective", "kind": "objective", "name": "Minimize ridge objective", "objective": { "direction": "minimize", "terms": [] } }],
+    "problems": [{ "id": "problem", "kind": "problem", "name": "Ridge problem", "objectiveIds": ["objective"], "constraintIds": [] }],
+    "solvers": [],
+    "results": [],
+    "workspaceReferences": []
+  },
+  "workspaceNodes": [],
+  "connections": [
+    { "id": "objective-term", "source": { "objectId": "atom-ridge-objective", "port": "expression" }, "target": { "objectId": "objective", "slot": "term0" } },
+    { "id": "problem-objective", "source": { "objectId": "objective", "port": "expression" }, "target": { "objectId": "problem", "slot": "objective" } }
+  ],
+  "workspace": { "nodes": [], "connections": [], "camera": {}, "openPanels": {} },
+  "views": {},
+  "future": {},
+  "cards": [],
+  "queries": [],
+  "groups": []
+}

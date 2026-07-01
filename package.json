@@ -8,6 +8,7 @@
     "build": "pnpm --filter @dsd/web build",
     "preview": "pnpm --filter @dsd/web preview",
     "test": "vitest run",
+    "sync:cvxpy": "PYTHONPATH=backend python3 -m atlas_opt_core.tools.sync_cvxpy_symbols",
     "sync:assets": "tsx scripts/sync-assets.ts",
     "build:github-pages": "pnpm --filter @dsd/web build -- --base=/data_science_deck/",
     "prepare:github-pages": "pnpm sync:assets:public && pnpm audit:manifest-assets && pnpm build:github-pages && pnpm audit:public-build-assets && pnpm smoke:asset-urls && pnpm audit:release-paths && pnpm audit:asset-sizes",

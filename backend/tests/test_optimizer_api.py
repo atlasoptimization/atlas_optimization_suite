@@ -371,7 +371,7 @@ def test_fastapi_endpoints_if_fastapi_is_installed() -> None:
     pytest.importorskip("fastapi")
     from pydantic import ValidationError
 
-    from atlas_api import cvxpy_atoms, evaluate, generate_code, health, solve, validate
+    from atlas_api import capabilities, cvxpy_atoms, cvxpy_info, cvxpy_symbols, evaluate, generate_code, health, solve, validate
     from atlas_opt.schema import AtlasIR
 
     valid_ir = AtlasIR.model_validate(minimal_ir())
@@ -382,6 +382,17 @@ def test_fastapi_endpoints_if_fastapi_is_installed() -> None:
     assert "status" in solve(valid_ir)
     assert "import cvxpy as cp" in generate_code(valid_ir)["code"]
     assert cvxpy_atoms()["atoms"]
+    symbols = cvxpy_symbols()
+    assert symbols["symbols"]
+    assert symbols["cvxpyVersion"]
+    assert symbols["catalogGeneratedAt"]
+    assert symbols["catalogHash"]
+    assert cvxpy_info()["coreImportsSucceeded"] is True
+    assert isinstance(cvxpy_info()["installedSolvers"], list)
+    caps = capabilities()
+    assert caps["backendId"] == "local-fastapi"
+    assert caps["supportsValidate"] is True
+    assert "supportsSolve" in caps
 
     with pytest.raises(ValidationError):
         AtlasIR.model_validate({"cards": [{"type": "object"}]})

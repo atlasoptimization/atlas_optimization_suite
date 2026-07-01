@@ -63,7 +63,8 @@ export function getConstraintDependencySummary(
       expression.kind === "function_ref" && expression.functionCardId
         ? cards.find(
             (candidate) =>
-              candidate.id === expression.functionCardId && candidate.type === "function"
+              (candidate.id === expression.functionCardId || candidate.modelObjectId === expression.functionCardId) &&
+              candidate.type === "function"
           ) ?? null
         : null
     )
@@ -84,7 +85,7 @@ export function getConstraintDependencySummary(
 function expressionLabel(expression: AtlasConstraintExpression, cards: AtlasCard[]) {
   if (expression.kind === "constant") return String(expression.value);
   if (!expression.functionCardId) return "Function";
-  return cards.find((card) => card.id === expression.functionCardId)?.title ?? "Missing function";
+  return cards.find((card) => card.id === expression.functionCardId || card.modelObjectId === expression.functionCardId)?.title ?? "Missing function";
 }
 
 function normalizeConstraintExpression(

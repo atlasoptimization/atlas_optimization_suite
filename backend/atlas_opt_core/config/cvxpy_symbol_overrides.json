@@ -1,0 +1,52 @@
+{
+  "cvxpy.atoms.norm.norm": {
+    "category": "Norms",
+    "ui": {
+      "argumentUiHints": {
+        "p": {
+          "widget": "dropdown",
+          "options": [1, 2, "inf", "fro", "nuc"]
+        }
+      }
+    },
+    "examples": ["norm(x, 2)", "norm(A @ x - b, 2)"]
+  },
+  "cvxpy.atoms.sum_squares.sum_squares": {
+    "category": "Quadratic",
+    "examples": ["sum_squares(A @ x - b)"]
+  },
+  "cvxpy.atoms.quad_form.quad_form": {
+    "category": "Quadratic",
+    "warning": "The second argument should be symmetric/PSD where required by CVXPY."
+  },
+  "cvxpy.atoms.affine.hstack.hstack": {
+    "category": "Stacking",
+    "ui": {
+      "argumentUiHints": {
+        "arg_list": {
+          "widget": "variadic_expression_list"
+        }
+      }
+    }
+  },
+  "cvxpy.atoms.affine.vstack.vstack": {
+    "category": "Stacking",
+    "ui": {
+      "argumentUiHints": {
+        "arg_list": {
+          "widget": "variadic_expression_list"
+        }
+      }
+    }
+  },
+  "cvxpy.atoms.affine.reshape.reshape": {
+    "category": "Shape transforms",
+    "ui": {
+      "argumentUiHints": {
+        "shape": {
+          "widget": "shape_tuple_editor"
+        }
+      }
+    }
+  }
+}

@@ -145,10 +145,11 @@ class DecisionIR(AtlasBaseModel):
     """Decision variable metadata stored on Decision cards."""
 
     variableType: Literal["continuous", "integer", "binary"] = "continuous"
-    shape: Literal["scalar"] = "scalar"
+    shape: Any = "scalar"
     lowerBound: float | None = None
     upperBound: float | None = None
     initialValue: float | None = None
+    attributes: dict[str, bool] = Field(default_factory=dict)
 
 
 class CsvDataIR(AtlasBaseModel):
@@ -386,7 +387,7 @@ class GroupIR(AtlasBaseModel):
 class MetadataIR(AtlasBaseModel):
     """Top-level Atlas IR metadata."""
 
-    schemaVersion: str = "0.2-cvxpy"
+    schemaVersion: str = "0.3.0"
     title: str | None = None
     name: str | None = None
     createdAt: str | None = None
@@ -398,7 +399,7 @@ class MetadataIR(AtlasBaseModel):
 class AtlasIR(AtlasBaseModel):
     """Top-level raw Atlas IR document."""
 
-    schemaVersion: str = "0.2-cvxpy"
+    schemaVersion: str = "0.3.0"
     metadata: MetadataIR = Field(default_factory=MetadataIR)
     modelObjects: ModelObjectsIR = Field(default_factory=ModelObjectsIR)
     workspaceNodes: list[WorkspaceNodeIR] = Field(default_factory=list)

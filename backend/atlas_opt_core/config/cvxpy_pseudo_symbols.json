@@ -1,0 +1,98 @@
+{
+  "symbols": [
+    {
+      "id": "atlas.operator.add",
+      "name": "add",
+      "kind": "operator",
+      "symbol": "+",
+      "signature": "(left, right)",
+      "arguments": [
+        {"name": "left", "kind": "expression"},
+        {"name": "right", "kind": "expression"}
+      ],
+      "category": "Operators"
+    },
+    {
+      "id": "atlas.operator.subtract",
+      "name": "subtract",
+      "kind": "operator",
+      "symbol": "-",
+      "signature": "(left, right)",
+      "arguments": [
+        {"name": "left", "kind": "expression"},
+        {"name": "right", "kind": "expression"}
+      ],
+      "category": "Operators"
+    },
+    {
+      "id": "atlas.operator.multiply",
+      "name": "multiply",
+      "kind": "operator",
+      "symbol": "*",
+      "signature": "(left, right)",
+      "arguments": [
+        {"name": "left", "kind": "expression"},
+        {"name": "right", "kind": "expression"}
+      ],
+      "category": "Operators",
+      "note": "DCP depends on one side being constant or parameter."
+    },
+    {
+      "id": "atlas.operator.matmul",
+      "name": "matmul",
+      "kind": "operator",
+      "symbol": "@",
+      "signature": "(left, right)",
+      "arguments": [
+        {"name": "left", "kind": "expression"},
+        {"name": "right", "kind": "expression"}
+      ],
+      "category": "Operators"
+    },
+    {
+      "id": "atlas.operator.negate",
+      "name": "negate",
+      "kind": "operator",
+      "symbol": "-",
+      "signature": "(x)",
+      "arguments": [{"name": "x", "kind": "expression"}],
+      "category": "Operators"
+    },
+    {
+      "id": "atlas.constraint.leq",
+      "name": "less_equal",
+      "kind": "constraint_operator",
+      "symbol": "<=",
+      "signature": "(left, right)",
+      "arguments": [
+        {"name": "left", "kind": "expression"},
+        {"name": "right", "kind": "expression"}
+      ],
+      "category": "Constraints"
+    },
+    {
+      "id": "atlas.constraint.geq",
+      "name": "greater_equal",
+      "kind": "constraint_operator",
+      "symbol": ">=",
+      "signature": "(left, right)",
+      "arguments": [
+        {"name": "left", "kind": "expression"},
+        {"name": "right", "kind": "expression"}
+      ],
+      "category": "Constraints"
+    },
+    {
+      "id": "atlas.constraint.eq",
+      "name": "equal",
+      "kind": "constraint_operator",
+      "symbol": "==",
+      "signature": "(left, right)",
+      "arguments": [
+        {"name": "left", "kind": "expression"},
+        {"name": "right", "kind": "expression"}
+      ],
+      "category": "Constraints"
+    }
+  ]
+}

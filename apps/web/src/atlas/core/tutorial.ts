@@ -1,9 +1,16 @@
 import { loadAtlasBuiltinExample, type AtlasBuiltinExampleId } from "./builtinExamples";
-import type { AtlasAction, AtlasWorkbenchState } from "./types";
+import type { AtlasAction, AtlasConnectionEndpoint, AtlasPosition, AtlasWorkbenchState } from "./types";
+
+export type AtlasTutorialView = "object" | "ir" | "code" | "solution" | "diagnostics";
 
 export type AtlasTutorialAction =
   | { type: "dispatch"; action: AtlasAction }
+  | { type: "clearWorkspace" }
+  | { type: "defineModelObject"; action: Extract<AtlasAction, { type: "modelObject.define" }> }
+  | { type: "placeWorkspaceReference"; modelObjectId: string; position?: AtlasPosition }
+  | { type: "connectObjects"; source: AtlasConnectionEndpoint; target: AtlasConnectionEndpoint; semanticKind?: string }
   | { type: "loadExample"; exampleId: AtlasBuiltinExampleId }
+  | { type: "switchView"; view: AtlasTutorialView }
   | { type: "validate" | "evaluate" | "solve" | "generateCode" }
   | { type: "highlight"; cardId: string }
   | { type: "message"; text: string };
@@ -154,7 +161,7 @@ export function tutorialResetState(state: AtlasWorkbenchState): AtlasWorkbenchSt
 export function executeTutorialAction(
   state: AtlasWorkbenchState,
   action: AtlasTutorialAction
-): { state: AtlasWorkbenchState; dispatch?: AtlasAction; diagnostic?: string } {
+): { state: AtlasWorkbenchState; dispatch?: AtlasAction; diagnostic?: string; view?: AtlasTutorialView } {
   if (action.type === "loadExample") {
     try {
       return { state: loadAtlasBuiltinExample(action.exampleId) };
@@ -162,6 +169,26 @@ export function executeTutorialAction(
       return { state, diagnostic: error instanceof Error ? error.message : "Example load failed." };
     }
   }
+  if (action.type === "clearWorkspace") return { state, dispatch: { type: "workbench.clear" } };
+  if (action.type === "defineModelObject") return { state, dispatch: action.action };
+  if (action.type === "placeWorkspaceReference") {
+    return {
+      state,
+      dispatch: { type: "workspaceReference.create", modelObjectId: action.modelObjectId, position: action.position }
+    };
+  }
+  if (action.type === "connectObjects") {
+    return {
+      state,
+      dispatch: {
+        type: "connection.create",
+        source: action.source,
+        target: action.target,
+        semanticKind: action.semanticKind
+      }
+    };
+  }
+  if (action.type === "switchView") return { state, view: action.view };
   if (action.type === "dispatch") return { state, dispatch: action.action };
   if (action.type === "highlight") return { state, dispatch: { type: "card.select", cardId: action.cardId } };
   if (action.type === "message" || action.type === "validate" || action.type === "evaluate" || action.type === "solve" || action.type === "generateCode") {
@@ -176,25 +203,34 @@ function exampleSteps(exampleId: AtlasBuiltinExampleId, title: string, texts: st
       id: `${exampleId}-load`,
       title: `${title}: load project`,
       text: texts[0] ?? "Load the example project.",
-      actions: [{ type: "loadExample", exampleId }]
+      actions: [{ type: "switchView", view: "object" }, { type: "loadExample", exampleId }]
     },
     {
       id: `${exampleId}-construct`,
       title: `${title}: inspect construction`,
       text: texts[1] ?? "Inspect the generated expression graph.",
-      actions: [{ type: "message", text: "The example is ordinary Atlas IR and can be edited like any other project." }]
+      actions: [
+        { type: "switchView", view: "object" },
+        { type: "message", text: "The example is ordinary Atlas IR and can be edited like any other project." }
+      ]
     },
     {
       id: `${exampleId}-validate`,
       title: `${title}: validate`,
       text: texts[2] ?? "Validate the graph with backend metadata.",
-      actions: [{ type: "validate" }]
+      actions: [{ type: "switchView", view: "diagnostics" }, { type: "validate" }]
+    },
+    {
+      id: `${exampleId}-code`,
+      title: `${title}: generate code`,
+      text: "Generate readable Python/CVXPY code from the same Atlas IR.",
+      actions: [{ type: "switchView", view: "code" }, { type: "generateCode" }]
     },
     {
       id: `${exampleId}-solve`,
       title: `${title}: solve`,
       text: texts[3] ?? "Solve the model and inspect the solution.",
-      actions: [{ type: "solve" }]
+      actions: [{ type: "switchView", view: "solution" }, { type: "solve" }]
     }
   ];
 }

@@ -1,0 +1,12 @@
+{
+  "name": "least_squares",
+  "solveSupport": "pending",
+  "pendingReason": "Current compiler support for matrix least-squares examples is still being stabilized.",
+  "expectedDcpStatus": true,
+  "expectedGeneratedCodeFragments": ["import cvxpy as cp", "sum_squares"],
+  "expectedSolverStatus": ["optimal", "optimal_inaccurate"],
+  "expectedVariableValues": {
+    "var-x": { "value": [1.1667, 0.5], "tolerance": 0.001 }
+  },
+  "expectedMaxDiagnosticSeverity": "warning"
+}

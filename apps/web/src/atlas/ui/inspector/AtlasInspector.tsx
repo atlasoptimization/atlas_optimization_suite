@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { parseAtlasCsv } from "../../core/csv";
 import type { AtlasCvxpyObjectMetadata } from "../../api/backendClient";
 import {
@@ -62,7 +62,11 @@ type AtlasInspectorProps = {
   selectedRuntimeDiagnostic?: AtlasRuntimeDiagnostic | null;
   symbolicPreview: AtlasSymbolicPreview | null;
   cvxpyMetadata?: AtlasCvxpyObjectMetadata | null;
+  generatedCode?: string | null;
   dependencyHighlightEnabled: boolean;
+  onValidate?: () => void;
+  onEvaluate?: () => void;
+  onGenerateCode?: () => void;
   onAddTag: (cardId: string, key: string, value: string) => void;
   onUpdateTag: (cardId: string, tagId: string, key: string, value: string) => void;
   onDeleteTag: (cardId: string, tagId: string) => void;
@@ -163,7 +167,11 @@ export function AtlasInspector({
   selectedRuntimeDiagnostic,
   symbolicPreview,
   cvxpyMetadata,
+  generatedCode,
   dependencyHighlightEnabled,
+  onValidate,
+  onEvaluate,
+  onGenerateCode,
   onAddTag,
   onUpdateTag,
   onDeleteTag,
@@ -386,6 +394,9 @@ export function AtlasInspector({
 
   const selectedCard = card;
   const indexSetCards = getIndexSetCards({ cards });
+  const selectedObjectId = selectedCard.modelObjectId ?? selectedCard.id;
+  const workspaceReferences = cards.filter((candidate) => (candidate.modelObjectId ?? candidate.id) === selectedObjectId);
+  const selectedGeneratedCode = generatedCode ? selectedObjectCode(generatedCode, selectedCard) : "";
 
   function addTag(key: string, value = "") {
     const trimmedKey = key.trim();
@@ -441,35 +452,129 @@ export function AtlasInspector({
         <p className="atlas-eyebrow">Inspector</p>
         <h2>{card.title}</h2>
       </header>
-      <dl className="atlas-placeholder-list">
+      <dl className="atlas-inspector-summary">
         <div>
-          <dt>Type</dt>
-          <dd>{card.type}</dd>
+          <dt>Kind</dt>
+          <dd>{card.modelObjectKind ?? card.type}</dd>
         </div>
         <div>
-          <dt>Position</dt>
-          <dd>
-            x {card.position.x}, y {card.position.y}
-          </dd>
+          <dt>Canonical object</dt>
+          <dd>{selectedObjectId}</dd>
         </div>
         <div>
-          <dt>Tags</dt>
-          <dd>{card.tags.length === 0 ? "No tags yet." : `${card.tags.length} tags`}</dd>
+          <dt>Reference node</dt>
+          <dd>{card.id}</dd>
         </div>
         <div>
-          <dt>Properties</dt>
-          <dd>
-            {card.properties.length === 0
-              ? "No properties yet."
-              : `${card.properties.length} properties`}
-          </dd>
+          <dt>Shape</dt>
+          <dd>{cvxpyMetadata ? formatCvxpyShape(cvxpyMetadata.shape) : shapeLabel(card)}</dd>
         </div>
         <div>
-          <dt>Notes</dt>
-          <dd>{card.notes || "No notes yet."}</dd>
+          <dt>DCP</dt>
+          <dd>{cvxpyMetadata ? formatCvxpyBoolean(cvxpyMetadata.is_dcp) : "unknown"}</dd>
+        </div>
+        <div>
+          <dt>Current value</dt>
+          <dd>{evaluationEntry?.value ? formatEvaluationSummary(evaluationEntry) : "not evaluated"}</dd>
+        </div>
+        <div>
+          <dt>Solution/runtime</dt>
+          <dd>{selectedRuntimeDiagnostic?.cardId === card.id ? selectedRuntimeDiagnostic.value : "none"}</dd>
         </div>
       </dl>
+      <div className="atlas-inspector-main-actions">
+        <button type="button" onClick={() => onUpdateCardDetails(card.id, { title: cardDetailsDraft.title })}>
+          Rename
+        </button>
+        <button type="button" onClick={onValidate}>Validate</button>
+        <button type="button" onClick={onEvaluate}>Evaluate</button>
+        <button type="button" onClick={onGenerateCode}>Generate Code</button>
+        <button type="button" className="atlas-danger-button" onClick={() => onDeleteCard(card.id)}>
+          {card.workspaceRole === "reference" ? "Delete Reference" : "Delete Object"}
+        </button>
+      </div>
 
+      <InspectorSection title="CVXPY Code">
+        {selectedGeneratedCode ? (
+          <pre className="atlas-code-snippet">{selectedGeneratedCode}</pre>
+        ) : (
+          <p className="atlas-muted">Generate code to inspect associated CVXPY output for this object.</p>
+        )}
+      </InspectorSection>
+
+      <InspectorSection title="Metadata">
+        {cvxpyMetadata ? (
+          <dl className="atlas-placeholder-list">
+            <div>
+              <dt>Shape</dt>
+              <dd>{formatCvxpyShape(cvxpyMetadata.shape)}</dd>
+            </div>
+            <div>
+              <dt>Sign</dt>
+              <dd>{cvxpyMetadata.sign ?? "unknown"}</dd>
+            </div>
+            <div>
+              <dt>Curvature</dt>
+              <dd>{cvxpyMetadata.curvature ?? "unknown"}</dd>
+            </div>
+            <div>
+              <dt>DCP</dt>
+              <dd>{formatCvxpyBoolean(cvxpyMetadata.is_dcp)}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="atlas-muted">No CVXPY metadata yet. Run Validate.</p>
+        )}
+      </InspectorSection>
+
+      <InspectorSection title="Diagnostics">
+        <EvaluationPanel
+          entry={evaluationEntry}
+          mode={evaluationMode}
+          warning={solutionEvaluationWarning}
+        />
+        {selectedRuntimeDiagnostic?.cardId === card.id ? (
+          <dl className="atlas-placeholder-list">
+            <div>
+              <dt>{selectedRuntimeDiagnostic.label}</dt>
+              <dd>{selectedRuntimeDiagnostic.value}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>{selectedRuntimeDiagnostic.status}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="atlas-muted">No selected object runtime diagnostic.</p>
+        )}
+      </InspectorSection>
+
+      <InspectorSection title="References / Usages">
+        <dl className="atlas-placeholder-list">
+          <div>
+            <dt>Workspace references</dt>
+            <dd>{workspaceReferences.length}</dd>
+          </div>
+          <div>
+            <dt>Canonical object</dt>
+            <dd>{selectedObjectId}</dd>
+          </div>
+        </dl>
+        <ul className="atlas-diagnostic-list">
+          {workspaceReferences.map((reference) => (
+            <li key={reference.id}>
+              <strong>{reference.workspaceRole ?? "node"}</strong>
+              <span>{reference.id}</span>
+            </li>
+          ))}
+        </ul>
+      </InspectorSection>
+
+      <InspectorSection title="Raw IR">
+        <pre className="atlas-code-snippet">{JSON.stringify(compactCardIR(card), null, 2)}</pre>
+      </InspectorSection>
+
+      <InspectorSection title="Properties">
       {card.atomSpec && (
         <section className="atlas-status-box" aria-label="CVXPY atom metadata">
           <span>CVXPY atom</span>
@@ -932,10 +1037,12 @@ export function AtlasInspector({
           onUpdateConstraint={onUpdateConstraint}
         />
       )}
+      </InspectorSection>
 
-      <button type="button" className="atlas-danger-button" onClick={() => onDeleteCard(card.id)}>
-        Delete card
-      </button>
+      <InspectorSection title="Advanced / Debug">
+        <p className="atlas-muted">Advanced object diagnostics and raw editing tools are grouped above. Use Object View and Diagnostics View for graph-wide debugging.</p>
+      </InspectorSection>
+
     </section>
   );
 }
@@ -1382,6 +1489,59 @@ function GeneratedMathPanel({ preview }: { preview: AtlasSymbolicPreview | null 
       )}
     </section>
   );
+}
+
+function InspectorSection({
+  title,
+  children,
+  defaultOpen = false
+}: {
+  title: string;
+  children: ReactNode;
+  defaultOpen?: boolean;
+}) {
+  return (
+    <details className="atlas-inspector-section" open={defaultOpen}>
+      <summary>{title}</summary>
+      <div className="atlas-inspector-section-body">{children}</div>
+    </details>
+  );
+}
+
+function formatEvaluationSummary(entry: AtlasEvaluationEntry) {
+  if (!entry.value) return "unavailable";
+  if (entry.value.kind === "number") return String(entry.value.value);
+  return `${entry.value.left ?? "?"} / ${entry.value.right ?? "?"}`;
+}
+
+function shapeLabel(card: AtlasCard) {
+  const notesMatch = card.notes?.match(/^(scalar|vector|matrix)\b/);
+  if (notesMatch) return notesMatch[1];
+  if (card.decision?.shape) return card.decision.shape;
+  return "unknown";
+}
+
+function selectedObjectCode(code: string, card: AtlasCard) {
+  const needles = [card.modelObjectId, card.title, card.id].filter(Boolean).map(String);
+  const lines = code.split("\n");
+  const selectedLines = lines.filter((line) => needles.some((needle) => line.includes(needle)));
+  if (selectedLines.length > 0) return selectedLines.join("\n");
+  return code.length > 1800 ? `${code.slice(0, 1800)}\n# ...` : code;
+}
+
+function compactCardIR(card: AtlasCard) {
+  return {
+    id: card.id,
+    modelObjectId: card.modelObjectId,
+    modelObjectKind: card.modelObjectKind,
+    workspaceRole: card.workspaceRole,
+    type: card.type,
+    title: card.title,
+    tags: card.tags,
+    properties: card.properties,
+    atomConfig: card.atomConfig,
+    position: card.position
+  };
 }
 
 function DecisionMetadataEditor({

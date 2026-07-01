@@ -35,6 +35,7 @@ type AtlasWorkbenchProps = {
   onCreateWorkspaceReference: (modelObjectId: string, position: AtlasPosition) => void;
   onCreateAtomFromSpec: (atomSpec: AtlasAtomSpec, position: AtlasPosition) => void;
   onCreateConnection: (source: AtlasConnectionEndpoint, target: AtlasConnectionEndpoint) => void;
+  onSelectConnection: (connectionId: string | null) => void;
   onAttachModule: (cardId: string, kind: AtlasCardModuleKind, position: AtlasPosition) => void;
   onMoveModule: (cardId: string, moduleId: string, position: AtlasPosition) => void;
   onSelectDiagnostic: (diagnostic: AtlasRuntimeDiagnostic) => void;
@@ -86,6 +87,7 @@ export function AtlasWorkbench({
   onCreateWorkspaceReference,
   onCreateAtomFromSpec,
   onCreateConnection,
+  onSelectConnection,
   onAttachModule,
   onMoveModule,
   onSelectDiagnostic,
@@ -230,6 +232,7 @@ export function AtlasWorkbench({
             onPointerDown={() => {
               onSelectCard(null);
               onSelectGroup(null);
+              onSelectConnection(null);
             }}
           >
             {cards.length === 0 && groups.length === 0 && (
@@ -260,6 +263,11 @@ export function AtlasWorkbench({
                       event.preventDefault();
                       event.stopPropagation();
                       onConnectionContextMenu(event, connection);
+                    }}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onSelectConnection(connection.id);
                     }}
                   />
                 );

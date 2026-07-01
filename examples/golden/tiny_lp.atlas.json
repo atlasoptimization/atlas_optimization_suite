@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "0.3.0",
+  "metadata": {
+    "schemaVersion": "0.3.0",
+    "source": "atlas-gui",
+    "title": "Tiny LP",
+    "exportedAt": "2026-01-01T00:00:00Z"
+  },
+  "modelObjects": {
+    "variables": [
+      { "id": "var-x", "kind": "variable", "name": "x" },
+      { "id": "var-y", "kind": "variable", "name": "y" }
+    ],
+    "parameters": [],
+    "constants": [
+      { "id": "const-3", "kind": "constant", "name": "3", "value": 3 },
+      { "id": "const-2", "kind": "constant", "name": "2", "value": 2 },
+      { "id": "const-4", "kind": "constant", "name": "4", "value": 4 },
+      { "id": "const-3-bound", "kind": "constant", "name": "3", "value": 3 },
+      { "id": "const-0", "kind": "constant", "name": "0", "value": 0 }
+    ],
+    "atoms": [
+      { "id": "atom-3x", "kind": "atom", "name": "multiply", "atomName": "multiply", "importPath": "atlas.expression.multiply", "displayName": "multiply", "positionalInputs": [{ "id": "input-var-x", "name": "var-x", "kind": "reference", "objectId": "var-x" }, { "id": "input-const-3", "name": "const-3", "kind": "reference", "objectId": "const-3" }], "keywordInputs": {} },
+      { "id": "atom-2y", "kind": "atom", "name": "multiply", "atomName": "multiply", "importPath": "atlas.expression.multiply", "displayName": "multiply", "positionalInputs": [{ "id": "input-var-y", "name": "var-y", "kind": "reference", "objectId": "var-y" }, { "id": "input-const-2", "name": "const-2", "kind": "reference", "objectId": "const-2" }], "keywordInputs": {} },
+      { "id": "atom-objective", "kind": "atom", "name": "add", "atomName": "add", "importPath": "atlas.expression.add", "displayName": "add", "positionalInputs": [{ "id": "input-atom-3x", "name": "atom-3x", "kind": "reference", "objectId": "atom-3x" }, { "id": "input-atom-2y", "name": "atom-2y", "kind": "reference", "objectId": "atom-2y" }], "keywordInputs": {} },
+      { "id": "atom-x-plus-y", "kind": "atom", "name": "add", "atomName": "add", "importPath": "atlas.expression.add", "displayName": "add", "positionalInputs": [{ "id": "input-var-x", "name": "var-x", "kind": "reference", "objectId": "var-x" }, { "id": "input-var-y", "name": "var-y", "kind": "reference", "objectId": "var-y" }], "keywordInputs": {} }
+    ],
+    "expressions": [],
+    "constraints": [
+      { "id": "constraint-sum", "kind": "constraint", "name": "x + y <= 4", "constraint": { "name": "x + y <= 4", "operator": "<=", "left": { "kind": "constant", "value": 0 }, "right": { "kind": "constant", "value": 0 } } },
+      { "id": "constraint-x-upper", "kind": "constraint", "name": "x <= 2", "constraint": { "name": "x <= 2", "operator": "<=", "left": { "kind": "constant", "value": 0 }, "right": { "kind": "constant", "value": 0 } } },
+      { "id": "constraint-y-upper", "kind": "constraint", "name": "y <= 3", "constraint": { "name": "y <= 3", "operator": "<=", "left": { "kind": "constant", "value": 0 }, "right": { "kind": "constant", "value": 0 } } },
+      { "id": "constraint-x-lower", "kind": "constraint", "name": "x >= 0", "constraint": { "name": "x >= 0", "operator": ">=", "left": { "kind": "constant", "value": 0 }, "right": { "kind": "constant", "value": 0 } } },
+      { "id": "constraint-y-lower", "kind": "constraint", "name": "y >= 0", "constraint": { "name": "y >= 0", "operator": ">=", "left": { "kind": "constant", "value": 0 }, "right": { "kind": "constant", "value": 0 } } }
+    ],
+    "objectives": [
+      { "id": "objective", "kind": "objective", "name": "Maximize 3x + 2y", "objective": { "direction": "maximize", "terms": [] } }
+    ],
+    "problems": [
+      { "id": "problem", "kind": "problem", "name": "Tiny LP problem", "objectiveIds": ["objective"], "constraintIds": ["constraint-sum", "constraint-x-upper", "constraint-y-upper", "constraint-x-lower", "constraint-y-lower"] }
+    ],
+    "solvers": [],
+    "results": [],
+    "workspaceReferences": []
+  },
+  "workspaceNodes": [],
+  "connections": [
+    { "id": "objective-term", "source": { "objectId": "atom-objective", "port": "expression" }, "target": { "objectId": "objective", "slot": "term0" }, "semanticReference": { "kind": "expression_input", "objectId": "atom-objective" } },
+    { "id": "problem-objective", "source": { "objectId": "objective", "port": "expression" }, "target": { "objectId": "problem", "slot": "objective" }, "semanticReference": { "kind": "expression_input", "objectId": "objective" } },
+    { "id": "c-sum-l", "source": { "objectId": "atom-x-plus-y", "port": "expression" }, "target": { "objectId": "constraint-sum", "slot": "lhs" }, "semanticReference": { "kind": "expression_input", "objectId": "atom-x-plus-y" } },
+    { "id": "c-sum-r", "source": { "objectId": "const-4", "port": "expression" }, "target": { "objectId": "constraint-sum", "slot": "rhs" }, "semanticReference": { "kind": "expression_input", "objectId": "const-4" } },
+    { "id": "c-xu-l", "source": { "objectId": "var-x", "port": "expression" }, "target": { "objectId": "constraint-x-upper", "slot": "lhs" }, "semanticReference": { "kind": "expression_input", "objectId": "var-x" } },
+    { "id": "c-xu-r", "source": { "objectId": "const-2", "port": "expression" }, "target": { "objectId": "constraint-x-upper", "slot": "rhs" }, "semanticReference": { "kind": "expression_input", "objectId": "const-2" } },
+    { "id": "c-yu-l", "source": { "objectId": "var-y", "port": "expression" }, "target": { "objectId": "constraint-y-upper", "slot": "lhs" }, "semanticReference": { "kind": "expression_input", "objectId": "var-y" } },
+    { "id": "c-yu-r", "source": { "objectId": "const-3-bound", "port": "expression" }, "target": { "objectId": "constraint-y-upper", "slot": "rhs" }, "semanticReference": { "kind": "expression_input", "objectId": "const-3-bound" } },
+    { "id": "c-xl-l", "source": { "objectId": "var-x", "port": "expression" }, "target": { "objectId": "constraint-x-lower", "slot": "lhs" }, "semanticReference": { "kind": "expression_input", "objectId": "var-x" } },
+    { "id": "c-xl-r", "source": { "objectId": "const-0", "port": "expression" }, "target": { "objectId": "constraint-x-lower", "slot": "rhs" }, "semanticReference": { "kind": "expression_input", "objectId": "const-0" } },
+    { "id": "c-yl-l", "source": { "objectId": "var-y", "port": "expression" }, "target": { "objectId": "constraint-y-lower", "slot": "lhs" }, "semanticReference": { "kind": "expression_input", "objectId": "var-y" } },
+    { "id": "c-yl-r", "source": { "objectId": "const-0", "port": "expression" }, "target": { "objectId": "constraint-y-lower", "slot": "rhs" }, "semanticReference": { "kind": "expression_input", "objectId": "const-0" } },
+    { "id": "problem-constraint-sum", "source": { "objectId": "constraint-sum", "port": "expression" }, "target": { "objectId": "problem", "slot": "constraints" }, "semanticReference": { "kind": "expression_input", "objectId": "constraint-sum" } },
+    { "id": "problem-constraint-x-upper", "source": { "objectId": "constraint-x-upper", "port": "expression" }, "target": { "objectId": "problem", "slot": "constraints" }, "semanticReference": { "kind": "expression_input", "objectId": "constraint-x-upper" } },
+    { "id": "problem-constraint-y-upper", "source": { "objectId": "constraint-y-upper", "port": "expression" }, "target": { "objectId": "problem", "slot": "constraints" }, "semanticReference": { "kind": "expression_input", "objectId": "constraint-y-upper" } },
+    { "id": "problem-constraint-x-lower", "source": { "objectId": "constraint-x-lower", "port": "expression" }, "target": { "objectId": "problem", "slot": "constraints" }, "semanticReference": { "kind": "expression_input", "objectId": "constraint-x-lower" } },
+    { "id": "problem-constraint-y-lower", "source": { "objectId": "constraint-y-lower", "port": "expression" }, "target": { "objectId": "problem", "slot": "constraints" }, "semanticReference": { "kind": "expression_input", "objectId": "constraint-y-lower" } }
+  ],
+  "workspace": {
+    "nodes": [],
+    "connections": [],
+    "camera": {},
+    "openPanels": {}
+  },
+  "views": {},
+  "future": {},
+  "cards": [],
+  "queries": [],
+  "groups": []
+}

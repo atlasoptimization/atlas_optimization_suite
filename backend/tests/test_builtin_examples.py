@@ -34,6 +34,53 @@ def test_tiny_lp_generate_code_from_ir_without_cvxpy() -> None:
     assert "problem.solve()" in response["code"]
 
 
+def test_cvxpy_first_variable_shape_and_attributes_generate_variable_options() -> None:
+    ir = tiny_lp_ir()
+    ir["modelObjects"]["variables"] = [
+        {
+            "id": "var-y",
+            "kind": "variable",
+            "name": "y",
+            "shape": 20,
+            "decision": {"variableType": "binary", "shape": "vector", "attributes": {"boolean": True}},
+        },
+        {
+            "id": "var-X",
+            "kind": "variable",
+            "name": "X",
+            "shape": [3, 2],
+            "decision": {"variableType": "continuous", "shape": "matrix", "attributes": {"nonneg": True}},
+        },
+    ]
+    ir["modelObjects"]["constants"] = []
+    ir["modelObjects"]["atoms"] = []
+    ir["modelObjects"]["constraints"] = []
+    ir["modelObjects"]["objectives"] = []
+    ir["modelObjects"]["problems"] = []
+    ir["workspaceNodes"] = []
+    ir["connections"] = []
+
+    response = AtlasOptimizer.from_ir(ir).generate_code()
+
+    assert 'y = cp.Variable(20, boolean=True, name="y")' in response["code"]
+    assert 'X = cp.Variable((3, 2), nonneg=True, name="X")' in response["code"]
+
+
+def test_tiny_lp_fastapi_solve_endpoint_returns_expected_result_if_cvxpy_is_installed() -> None:
+    pytest.importorskip("cvxpy")
+    pytest.importorskip("fastapi")
+
+    from atlas_api import solve
+    from atlas_opt.schema import AtlasIR
+
+    response = solve(AtlasIR.model_validate(tiny_lp_ir()))
+
+    assert response["status"] in {"optimal", "optimal_inaccurate"}
+    assert response["variableValues"]["var-x"] == pytest.approx(2, abs=1e-4)
+    assert response["variableValues"]["var-y"] == pytest.approx(2, abs=1e-4)
+    assert response["objectiveValue"] == pytest.approx(10, abs=1e-4)
+
+
 def test_invalid_cvxpy_first_model_returns_diagnostics_without_crashing() -> None:
     ir = tiny_lp_ir()
     ir["connections"] = [

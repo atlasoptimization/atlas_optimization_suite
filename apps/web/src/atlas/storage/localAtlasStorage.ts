@@ -80,8 +80,16 @@ export function normalizeAtlasState(value: unknown): AtlasWorkbenchState {
         .map(normalizeConnection)
         .filter((connection): connection is AtlasConnection => connection !== null)
     : [];
+  const selectedConnectionId =
+    selectedCardId === null &&
+    selectedGroupId === null &&
+    selectedQueryId === null &&
+    typeof value.selectedConnectionId === "string" &&
+    connections.some((connection) => connection.id === value.selectedConnectionId)
+      ? value.selectedConnectionId
+      : null;
 
-  return { cards, groups, queries, connections, selectedCardId, selectedGroupId, selectedQueryId };
+  return { cards, groups, queries, connections, selectedCardId, selectedGroupId, selectedQueryId, selectedConnectionId };
 }
 
 function normalizeConnection(value: Record<string, unknown>): AtlasConnection | null {
@@ -115,13 +123,18 @@ function normalizeAtomSpec(value: unknown) {
   const importPath = typeof value.importPath === "string" ? value.importPath : "";
   if (!name || !importPath) return undefined;
   return {
+    symbolId: typeof value.symbolId === "string" ? value.symbolId : undefined,
     name,
+    kind: typeof value.kind === "string" ? value.kind : undefined,
     importPath,
     displayName: typeof value.displayName === "string" ? value.displayName : undefined,
     signature: typeof value.signature === "string" ? value.signature : "(*args)",
     argumentNames: Array.isArray(value.argumentNames)
       ? value.argumentNames.filter((item): item is string => typeof item === "string")
       : [],
+    arguments: Array.isArray(value.arguments)
+      ? JSON.parse(JSON.stringify(value.arguments))
+      : undefined,
     defaultValues: isRecord(value.defaultValues)
       ? Object.fromEntries(Object.entries(value.defaultValues).map(([key, item]) => [key, String(item)]))
       : {},
@@ -129,6 +142,10 @@ function normalizeAtomSpec(value: unknown) {
     category: typeof value.category === "string" ? value.category : undefined,
     module: typeof value.module === "string" ? value.module : undefined,
     callable: typeof value.callable === "boolean" ? value.callable : undefined,
+    examples: Array.isArray(value.examples)
+      ? value.examples.filter((item): item is string => typeof item === "string")
+      : undefined,
+    symbol: typeof value.symbol === "string" ? value.symbol : undefined,
     uiOverrides: isRecord(value.uiOverrides) ? JSON.parse(JSON.stringify(value.uiOverrides)) : undefined
   };
 }
@@ -272,6 +289,7 @@ function normalizeAtomConfig(value: unknown): AtlasCard["atomConfig"] {
   const importPath = typeof value.importPath === "string" && value.importPath.trim() ? value.importPath.trim() : "";
   if (!atomName || !importPath) return undefined;
   return {
+    symbolId: typeof value.symbolId === "string" && value.symbolId.trim() ? value.symbolId.trim() : undefined,
     atomName,
     importPath,
     displayName: typeof value.displayName === "string" && value.displayName.trim() ? value.displayName.trim() : atomName,

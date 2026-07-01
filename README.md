@@ -181,6 +181,14 @@ uvicorn atlas_api:app --reload
 
 The frontend uses `http://localhost:8000` by default. Override it with `VITE_ATLAS_BACKEND_URL` when needed.
 
+Run the local Docker deployment:
+
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:8080`, select `Local FastAPI`, load `Tiny LP`, generate code, solve, and verify `x = 2`, `y = 2`, objective `10`.
+
 Run tests:
 
 ```bash

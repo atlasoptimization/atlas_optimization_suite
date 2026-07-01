@@ -12,6 +12,7 @@ import { createTaggedSumConfig } from "./functions";
 import { createConstraintConfig } from "./constraints";
 import { createObjectiveConfig } from "./objectives";
 import { getAtlasCardTemplate } from "./templates";
+import { atlasShapeLabel } from "./modelDefinitions";
 
 export const EMPTY_ATLAS_STATE: AtlasWorkbenchState = {
   cards: [],
@@ -20,7 +21,16 @@ export const EMPTY_ATLAS_STATE: AtlasWorkbenchState = {
   connections: [],
   selectedCardId: null,
   selectedGroupId: null,
-  selectedQueryId: null
+  selectedQueryId: null,
+  selectedConnectionId: null,
+  settings: {
+    defaultBackend: "local-fastapi",
+    defaultSolver: "CLARABEL",
+    autoValidate: false,
+    showAdvancedCvxpy: false,
+    numberFormat: "compact",
+    showDiagnosticsOnCanvas: true
+  }
 };
 
 const DEFAULT_CARD_TITLES: Record<AtlasCardType, string> = {
@@ -92,9 +102,12 @@ export function defineAtlasModelObject(
   state: AtlasWorkbenchState,
   objectKind: NonNullable<AtlasCard["modelObjectKind"]>,
   name: string,
-  shape: "scalar" | "vector" | "matrix" = "scalar",
+  shape: unknown = "scalar",
   atomSpec?: AtlasCard["atomSpec"],
-  position?: AtlasPosition
+  position?: AtlasPosition,
+  attributes: Record<string, boolean> = {},
+  value?: unknown,
+  notes?: string
 ): AtlasWorkbenchState {
   const cardType = MODEL_KIND_CARD_TYPE[objectKind] ?? "object";
   const modelObjectId = makeAtlasId(objectKind);
@@ -109,10 +122,19 @@ export function defineAtlasModelObject(
     title,
     modelObjectId,
     modelObjectKind: objectKind,
+    modelObjectShape: shape,
+    modelObjectValue: objectKind === "constant" || objectKind === "parameter" ? value : undefined,
     workspaceRole: "definition",
     atomSpec,
     atomConfig: objectKind === "atom" ? createAtomConfig(atomSpec, title) : undefined,
-    notes: `${shape} ${objectKind}`
+    decision: objectKind === "variable"
+      ? {
+          variableType: attributes.boolean ? "binary" : attributes.integer ? "integer" : "continuous",
+          shape: shapeModeForDecision(shape),
+          attributes
+        }
+      : card.decision,
+    notes: notes?.trim() || `${atlasShapeLabel(shape)} ${objectKind}`
   };
 
   return {
@@ -122,6 +144,10 @@ export function defineAtlasModelObject(
     selectedGroupId: null,
     selectedQueryId: null
   };
+}
+
+export function getWorkspaceCards(state: AtlasWorkbenchState): AtlasCard[] {
+  return state.cards.filter((card) => card.workspaceRole !== "definition");
 }
 
 export function createAtlasWorkspaceReference(
@@ -196,7 +222,23 @@ export function deleteAtlasCanonicalObject(
         (!connection.target.nodeId || remainingCardIds.has(connection.target.nodeId))
     ),
     selectedCardId:
-      state.selectedCardId && remainingCardIds.has(state.selectedCardId) ? state.selectedCardId : null
+      state.selectedCardId && remainingCardIds.has(state.selectedCardId) ? state.selectedCardId : null,
+    selectedConnectionId: null
+  };
+}
+
+export function clearAtlasDesk(state: AtlasWorkbenchState): AtlasWorkbenchState {
+  const definitionCards = state.cards.filter((card) => card.workspaceRole === "definition");
+  const definitionCardIds = new Set(definitionCards.map((card) => card.id));
+  return {
+    ...state,
+    cards: definitionCards,
+    groups: [],
+    connections: [],
+    selectedCardId:
+      state.selectedCardId && definitionCardIds.has(state.selectedCardId) ? state.selectedCardId : null,
+    selectedGroupId: null,
+    selectedConnectionId: null
   };
 }
 
@@ -358,7 +400,8 @@ export function deleteAtlasCard(state: AtlasWorkbenchState, cardId: string): Atl
     connections: (state.connections ?? []).filter(
       (connection) => connection.source.nodeId !== cardId && connection.target.nodeId !== cardId
     ),
-    selectedCardId: state.selectedCardId === cardId ? null : state.selectedCardId
+    selectedCardId: state.selectedCardId === cardId ? null : state.selectedCardId,
+    selectedConnectionId: null
   };
 }
 
@@ -541,13 +584,25 @@ function defaultModelObjectName(kind: string) {
   return kind;
 }
 
+function shapeModeForDecision(shape: unknown): "scalar" | "vector" | "matrix" | "custom" {
+  if (shape === "scalar" || shape === undefined || shape === null) return "scalar";
+  if (shape === "vector") return "vector";
+  if (shape === "matrix") return "matrix";
+  if (typeof shape === "number") return "vector";
+  if (Array.isArray(shape) && shape.length === 2) return "matrix";
+  return "custom";
+}
+
 function createAtomConfig(atomSpec: AtlasCard["atomSpec"], fallbackName: string): AtlasCard["atomConfig"] {
   const atomName = atomSpec?.name ?? fallbackName;
   const defaultValues = atomSpec?.defaultValues ?? {};
-  const argumentNames = atomSpec?.argumentNames?.length ? atomSpec.argumentNames : ["arg0", "arg1"];
+  const argumentSpecs = atomSpec?.arguments?.length
+    ? atomSpec.arguments
+    : (atomSpec?.argumentNames?.length ? atomSpec.argumentNames : ["arg0", "arg1"]).map((name) => ({ name }));
   const positionalInputs: AtlasAtomInput[] = [];
   const keywordInputs: Record<string, AtlasAtomInput> = {};
-  for (const name of argumentNames) {
+  for (const argument of argumentSpecs) {
+    const name = argument.name;
     if (name in defaultValues) {
       keywordInputs[name] = {
         id: `kw_${name}`,
@@ -564,6 +619,7 @@ function createAtomConfig(atomSpec: AtlasCard["atomSpec"], fallbackName: string)
     }
   }
   return {
+    symbolId: atomSpec?.symbolId,
     atomName,
     importPath: atomSpec?.importPath ?? `cvxpy.${atomName}`,
     displayName: atomSpec?.displayName ?? atomSpec?.name ?? fallbackName,

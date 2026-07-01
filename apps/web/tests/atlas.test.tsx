@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import App, { getInitialAppView } from "../src/App";
 import {
   addAtlasCard,
@@ -10,11 +12,13 @@ import {
   createAtlasCard,
   createAtlasProperty,
   createAtlasTag,
+  clearAtlasDesk,
   deleteAtlasCanonicalObject,
   defineAtlasModelObject,
   deleteAtlasCard,
   deleteAtlasProperty,
   deleteAtlasTag,
+  getWorkspaceCards,
   getCanonicalModelObjects,
   updateAtlasAtomInput,
   updateAtlasProperty,
@@ -45,6 +49,9 @@ import {
   validateLinearExpression,
   getMissingPropertyCards
 } from "../src/atlas/core/expressions";
+import {
+  parseAtlasShapeDraft
+} from "../src/atlas/core/modelDefinitions";
 import { parseAtlasCsv } from "../src/atlas/core/csv";
 import {
   createIndexSet,
@@ -131,7 +138,26 @@ import {
   solveAtlasModel,
   validateAtlasModel
 } from "../src/atlas/api/backendClient";
+import { createLocalFastApiBackend } from "../src/atlas/execution/LocalFastApiBackend";
+import { mockBackend } from "../src/atlas/execution/MockBackend";
+import { createPyodideBackend } from "../src/atlas/execution/PyodideBackend";
+import {
+  EXECUTION_BACKENDS,
+  colabExportBackend,
+  generateColabNotebook,
+  getExecutionBackend,
+  isExecutionBackendId
+} from "../src/atlas/execution";
 import { FALLBACK_ATOM_SPECS } from "../src/atlas/core/atoms";
+import {
+  filterByCategory,
+  filterByKind,
+  getAllSymbols,
+  getSymbolById,
+  searchSymbols,
+  symbolCatalogMetadata,
+  atomSpecFromSymbolId
+} from "../src/atlas/core/symbolCatalog";
 import {
   ATLAS_BUILTIN_EXAMPLES,
   loadAtlasBuiltinExample
@@ -141,7 +167,35 @@ import { normalizeAtlasState } from "../src/atlas/storage/localAtlasStorage";
 import { getAtlasCardTemplate } from "../src/atlas/core/templates";
 import type { AtlasWorkbenchState } from "../src/atlas/core/types";
 import { AtlasApp } from "../src/atlas/ui/AtlasApp";
+import { AtlasToolbar } from "../src/atlas/ui/AtlasToolbar";
 import { AtlasConstructorPanel } from "../src/atlas/ui/constructor/AtlasConstructorPanel";
+import { AtlasInspector } from "../src/atlas/ui/inspector/AtlasInspector";
+import {
+  ATLAS_COMMANDS,
+  createAtlasCommandRegistry,
+  isAtlasCommandEnabled
+} from "../src/atlas/ui/appCommands";
+import { buildAtlasMenus } from "../src/atlas/ui/appMenus";
+import {
+  ATLAS_VIEW_REGISTRY,
+  nextAtlasView
+} from "../src/atlas/ui/views/viewRegistry";
+import {
+  ATLAS_PANEL_REGISTRY,
+  defaultAtlasPanelState,
+  panelsForRegion,
+  toggleAtlasPanel
+} from "../src/atlas/ui/panels/panelRegistry";
+import { contextMenuItemsForTarget } from "../src/atlas/ui/context/contextMenuRegistry";
+import {
+  closeAtlasDialog,
+  openAtlasDialog
+} from "../src/atlas/ui/dialogs/dialogState";
+import { DialogHost } from "../src/atlas/ui/dialogs/DialogHost";
+import {
+  canvasPointFromClient,
+  parseAtlasDragPayload
+} from "../src/atlas/ui/workbench/dragDrop";
 import { AtlasCardView } from "../src/atlas/ui/workbench/AtlasCardView";
 import { AtlasAtomNode } from "../src/atlas/ui/workbench/AtlasAtomNode";
 import { AtlasGroupView } from "../src/atlas/ui/workbench/AtlasGroupView";
@@ -163,6 +217,7 @@ import {
   tutorialResetState
 } from "../src/atlas/core/tutorial";
 import { AtlasExamplesPanel } from "../src/atlas/ui/examples/AtlasExamplesPanel";
+import { AtlasAtomLibraryDialog } from "../src/atlas/ui/symbols/AtlasAtomLibraryDialog";
 import {
   AtlasCodeView,
   AtlasDiagnosticsView,
@@ -171,6 +226,24 @@ import {
   AtlasViewTabs,
   buildAtlasViewDiagnostics
 } from "../src/atlas/ui/views/AtlasMultiView";
+import {
+  REQUIRED_ATLAS_COMMAND_IDS,
+  executeCommand,
+  getCommand,
+  isCommandEnabled
+} from "../src/app/commands/commandRegistry";
+import {
+  commitTransaction,
+  createUndoRedoStore,
+  redo,
+  undo
+} from "../src/app/transactions/undoRedoStore";
+import { createActionTransaction } from "../src/app/transactions/applyTransaction";
+import { atlasEventLog } from "../src/app/debug/eventLog";
+import {
+  getCurrentSchemaVersion,
+  migrateIr
+} from "../src/atlas/core/atlasIr/migrations";
 
 function emptyAtlasState(): AtlasWorkbenchState {
   return {
@@ -198,10 +271,17 @@ describe("Atlas app skeleton", () => {
     expect(html).toContain("Undo");
     expect(html).toContain("Redo");
     expect(html).toContain("Search");
-    expect(html).toContain("Tutorial");
+    expect(html).toContain("Tutorials");
     expect(html).toContain("Examples");
+    expect(html).toContain("File");
+    expect(html).toContain("Edit");
+    expect(html).toContain("View");
+    expect(html).toContain("Run");
+    expect(html).toContain("Examples");
+    expect(html).toContain("Tools");
+    expect(html).toContain("Help");
     expect(html).toContain("Constructor");
-    expect(html).toContain("Define objects");
+    expect(html).toContain("Define...");
     expect(html).toContain("Explorer");
     expect(html).toContain("Build optimization problems from solver primitives.");
     expect(html).toContain("Objectives");
@@ -260,9 +340,99 @@ describe("Atlas app skeleton", () => {
     );
 
     expect(html).toContain("Loaded 2 atoms from backend registry.");
+    expect(html).toContain("Define...");
+    expect(html).toContain("Command / JSON snippet");
+    expect(html).toContain("Add Atom...");
+    expect(html).toContain("Variables");
+    expect(html).toContain("Parameters");
     expect(html).toContain("norm");
     expect(html).toContain("sum_squares");
     expect(html.toLowerCase()).toContain("cvxpy");
+  });
+
+  it("defining a parameter creates a canonical object for Explorer", () => {
+    const state = defineAtlasModelObject(emptyAtlasState(), "parameter", "lambda", "scalar");
+    const canonical = getCanonicalModelObjects(state);
+
+    expect(canonical).toHaveLength(1);
+    expect(canonical[0]?.title).toBe("lambda");
+    expect(canonical[0]?.modelObjectKind).toBe("parameter");
+    expect(canonical[0]?.workspaceRole).toBe("definition");
+  });
+
+  it("renders professional Atlas application menus", () => {
+    const html = renderToString(
+      <AtlasToolbar
+        onAction={() => undefined}
+        onViewChange={() => undefined}
+        executionBackends={EXECUTION_BACKENDS}
+        executionBackendId="mock"
+        onExecutionBackendChange={() => undefined}
+        canUndo={true}
+        canRedo={false}
+      />
+    );
+
+    expect(html).toContain("File");
+    expect(html).toContain("New Model");
+    expect(html).toContain("Clear Desk");
+    expect(html).toContain("Save Project As");
+    expect(html).toContain("Export CVXPY code");
+    expect(html).toContain("Export to Colab notebook");
+    expect(html).toContain("Edit");
+    expect(html).toContain("Undo");
+    expect(html).toContain("Delete Selected");
+    expect(html).toContain("View");
+    expect(html).toContain("Diagnostics View");
+    expect(html).toContain("Run");
+    expect(html).toContain("Execution backend");
+    expect(html).toContain("Backend Health Check");
+    expect(html).toContain("Mock");
+    expect(html).toContain("Local FastAPI");
+    expect(html).toContain("Browser/Pyodide");
+    expect(html).toContain("Colab Export");
+    expect(html).toContain("disabled");
+    expect(html).toContain("Evaluate at solution");
+    expect(html).toContain("Tiny LP");
+    expect(html).toContain("Command Palette");
+    expect(html).toContain("Help");
+    expect(html).toContain("Keyboard Shortcuts");
+  });
+
+  it("clear desk removes visual references while preserving canonical definitions", () => {
+    const withDefinition = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const canonicalId = withDefinition.cards[0]?.modelObjectId ?? "";
+    const withReference = createAtlasWorkspaceReference(withDefinition, canonicalId);
+    const cleared = clearAtlasDesk({
+      ...withReference,
+      groups: [createAtlasGroup()],
+      connections: [
+        {
+          id: "connection-ref",
+          source: { nodeId: withReference.cards[1]?.id, port: "value" },
+          target: { nodeId: "missing-node", slot: "arg0" },
+          semanticReference: { kind: "expression_input" }
+        }
+      ]
+    });
+
+    expect(cleared.cards).toHaveLength(1);
+    expect(cleared.cards[0]?.workspaceRole).toBe("definition");
+    expect(cleared.cards[0]?.modelObjectId).toBe(canonicalId);
+    expect(getCanonicalModelObjects(cleared)).toHaveLength(1);
+    expect(cleared.groups).toEqual([]);
+    expect(cleared.connections).toEqual([]);
+  });
+
+  it("new model clears the entire workbench model", () => {
+    const withDefinition = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const canonicalId = withDefinition.cards[0]?.modelObjectId ?? "";
+    const withReference = createAtlasWorkspaceReference(withDefinition, canonicalId);
+    const cleared = atlasReducer(withReference, { type: "workbench.clear" });
+
+    expect(cleared.cards).toEqual([]);
+    expect(cleared.connections).toEqual([]);
+    expect(getCanonicalModelObjects(cleared)).toEqual([]);
   });
 
   it("renders a context menu with disabled and destructive actions", () => {
@@ -285,6 +455,300 @@ describe("Atlas app skeleton", () => {
     expect(html).toContain("destructive");
   });
 });
+
+describe("Atlas execution backends", () => {
+  it("loads the generated CVXPY symbol catalog asset", () => {
+    const path = join(process.cwd(), "apps", "web", "src", "generated", "cvxpy_symbols.generated.json");
+    const fallbackPath = join(process.cwd(), "src", "generated", "cvxpy_symbols.generated.json");
+    const catalog = JSON.parse(readFileSync(existsSync(path) ? path : fallbackPath, "utf8")) as {
+      symbols: Array<{ id: string; name: string; source: string }>;
+    };
+
+    expect(catalog.symbols.length).toBeGreaterThan(0);
+    expect(catalog.symbols.some((symbol) => symbol.name === "norm")).toBe(true);
+    expect(catalog.symbols.some((symbol) => symbol.id === "atlas.operator.add" && symbol.source === "pseudo")).toBe(true);
+  });
+
+  it("searches and filters the generated symbol catalog", () => {
+    const metadata = symbolCatalogMetadata();
+    const norm = searchSymbols("norm").find((symbol) => symbol.name === "norm");
+
+    expect(metadata.symbolCount).toBeGreaterThan(0);
+    expect(getAllSymbols().length).toBe(metadata.symbolCount);
+    expect(norm?.id).toBeTruthy();
+    expect(norm ? getSymbolById(norm.id)?.name : undefined).toBe("norm");
+    expect(filterByKind("operator").some((symbol) => symbol.id === "atlas.operator.add")).toBe(true);
+    expect(filterByCategory("Norms").some((symbol) => symbol.name === "norm")).toBe(true);
+  });
+
+  it("renders the Atom Library from the generated symbol catalog", () => {
+    const html = renderToString(
+      <AtlasAtomLibraryDialog onClose={() => undefined} onCreateSymbol={() => undefined} />
+    );
+
+    expect(html).toContain("CVXPY Atom Library");
+    expect(html).toContain("norm");
+    expect(html).toContain("Examples:");
+  });
+
+  it("registers deployment modes behind the ExecutionBackend boundary", () => {
+    expect(EXECUTION_BACKENDS.map((backend) => backend.id)).toEqual([
+      "mock",
+      "local-fastapi",
+      "browser-pyodide",
+      "colab-export",
+      "hosted-api"
+    ]);
+    expect(getExecutionBackend("mock").label).toBe("Mock");
+    expect(getExecutionBackend("browser-pyodide").label).toBe("Browser/Pyodide");
+    expect(isExecutionBackendId("colab-export")).toBe(true);
+    expect(isExecutionBackendId("unknown")).toBe(false);
+  });
+
+  it("mock backend returns deterministic validation, code, and solution responses", async () => {
+    const ir = exportAtlasIR(
+      defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar"),
+      { exportedAt: "2026-01-01T00:00:00.000Z" }
+    );
+
+    const validation = await mockBackend.validate(ir);
+    const code = await mockBackend.generateCode(ir);
+    const solution = await mockBackend.solve(ir);
+    const variableId = ir.modelObjects.variables[0]?.id ?? "";
+
+    expect(validation.diagnostics?.[0]?.message).toContain("Mock validation passed");
+    expect(code.code).toContain("Mock backend generated code");
+    expect(solution.status).toBe("mock-optimal");
+    expect(solution.variableValues).toEqual({ [variableId]: 2 });
+    expect(solution.diagnostics?.[0]?.message).toContain("Mock mode is active");
+  });
+
+  it("local FastAPI backend adapter calls centralized endpoints", async () => {
+    const originalFetch = globalThis.fetch;
+    const calls: string[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      calls.push(String(input));
+      return {
+        ok: true,
+        json: async () => ({
+          status: "ok",
+          diagnostics: [],
+          metadata: {},
+          code: "problem.solve()"
+        })
+      } as Response;
+    }) as typeof fetch;
+
+    const backend = createLocalFastApiBackend();
+    const ir = exportAtlasIR(emptyAtlasState(), { exportedAt: "2026-01-01T00:00:00.000Z" });
+    await backend.health?.();
+    await backend.validate(ir);
+    await backend.evaluate(ir, "current");
+    await backend.generateCode(ir);
+    await backend.solve(ir);
+
+    globalThis.fetch = originalFetch;
+    expect(calls).toEqual([
+      "http://localhost:8000/health",
+      "http://localhost:8000/validate",
+      "http://localhost:8000/evaluate",
+      "http://localhost:8000/generate_code",
+      "http://localhost:8000/solve"
+    ]);
+  });
+
+  it("local FastAPI backend adapter reports unavailable and invalid responses clearly", async () => {
+    const originalFetch = globalThis.fetch;
+    const backend = createLocalFastApiBackend();
+    const ir = exportAtlasIR(emptyAtlasState(), { exportedAt: "2026-01-01T00:00:00.000Z" });
+
+    globalThis.fetch = (async () => ({ ok: false, status: 503, json: async () => ({}) }) as Response) as typeof fetch;
+    await expect(backend.solve(ir)).rejects.toThrow("Atlas backend /solve failed with HTTP 503.");
+
+    globalThis.fetch = (async () => ({ ok: true, json: async () => [] }) as Response) as typeof fetch;
+    await expect(backend.validate(ir)).rejects.toThrow("Invalid Local FastAPI validate response");
+
+    globalThis.fetch = originalFetch;
+  });
+
+  it("keeps GUI view modules independent from local FastAPI deployment code", () => {
+    const viewsDir = join(process.cwd(), "src", "atlas", "ui", "views");
+    const root = existsSync(viewsDir) ? viewsDir : join(process.cwd(), "apps", "web", "src", "atlas", "ui", "views");
+    const files = collectFiles(root);
+
+    for (const file of files) {
+      expect(readFileSync(file, "utf8")).not.toContain("LocalFastApiBackend");
+      expect(readFileSync(file, "utf8")).not.toContain("backendClient");
+    }
+  });
+
+  it("Pyodide backend exposes not-loaded, loading, ready, and error states without solving", async () => {
+    let releaseRuntime: (() => void) | null = null;
+    const pyodide = createPyodideBackend(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseRuntime = resolve;
+        })
+    );
+    const ir = exportAtlasIR(emptyAtlasState(), { exportedAt: "2026-01-01T00:00:00.000Z" });
+
+    expect(pyodide.getRuntimeState().status).toBe("not-loaded");
+    const loading = pyodide.loadRuntime();
+    expect(pyodide.getRuntimeState().status).toBe("loading");
+    releaseRuntime?.();
+    await loading;
+    expect(pyodide.getRuntimeState().status).toBe("ready");
+
+    const solve = await pyodide.solve(ir);
+    expect(solve.status).toBe("not_available");
+    expect(solve.diagnostics?.[0]?.message).toContain("Browser/Pyodide solve is not ready");
+
+    const broken = createPyodideBackend(() => Promise.reject(new Error("Pyodide failed")));
+    await broken.loadRuntime();
+    expect(broken.getRuntimeState().status).toBe("error");
+    expect(broken.getRuntimeState().message).toBe("Pyodide failed");
+  });
+
+  it("generates a valid Colab notebook for Tiny LP", async () => {
+    const ir = exportAtlasIR(loadAtlasBuiltinExample("tiny-lp"), {
+      exportedAt: "2026-01-01T00:00:00.000Z"
+    });
+    const result = generateColabNotebook(ir);
+    const notebook = JSON.parse(JSON.stringify(result.notebook)) as {
+      nbformat: number;
+      cells: Array<{ cell_type: string; source: string[] }>;
+    };
+    const source = notebook.cells.flatMap((cell) => cell.source).join("");
+
+    expect(result.filename).toBe("atlas_tiny_lp.ipynb");
+    expect(notebook.nbformat).toBe(4);
+    expect(notebook.cells.some((cell) => cell.cell_type === "markdown")).toBe(true);
+    expect(source).toContain("import cvxpy as cp");
+    expect(source).toContain("problem = cp.Problem(objective, constraints)");
+    expect(source).toContain("problem.solve()");
+    expect(source).toContain('print("status", problem.status)');
+    expect(source).toContain("Expected result: x = 2, y = 2, objective = 10.");
+  });
+
+  it("ColabExportBackend generateCode uses the current IR and solve instructs export", async () => {
+    const state = defineAtlasModelObject(emptyAtlasState(), "variable", "custom_decision", "scalar");
+    const ir = exportAtlasIR(state, { exportedAt: "2026-01-01T00:00:00.000Z" });
+    const code = await colabExportBackend.generateCode(ir);
+    const notebook = await colabExportBackend.exportNotebook?.(ir);
+    const solve = await colabExportBackend.solve(ir);
+
+    expect(code.code).toContain("custom_decision");
+    expect(code.code).not.toContain("x = cp.Variable");
+    expect(notebook?.filename).toMatch(/^atlas_.*\.ipynb$/);
+    expect(JSON.parse(notebook?.content ?? "{}").nbformat).toBe(4);
+    expect(solve.status).toBe("not_available");
+    expect(solve.diagnostics?.[0]?.message).toContain("Export and run in Colab");
+  });
+});
+
+describe("Atlas central command architecture", () => {
+  it("registers all required canonical commands", () => {
+    for (const commandId of REQUIRED_ATLAS_COMMAND_IDS) {
+      expect(getCommand(commandId)?.id).toBe(commandId);
+    }
+  });
+
+  it("evaluates enabled predicates for delete, undo, redo, and solve", () => {
+    const empty = emptyAtlasState();
+    const selected = { ...empty, selectedCardId: "node-x" };
+
+    expect(isCommandEnabled("edit.deleteSelected", { state: empty })).toBe(false);
+    expect(isCommandEnabled("edit.deleteSelected", { state: selected })).toBe(true);
+    expect(isCommandEnabled("edit.undo", { state: empty, canUndo: false })).toBe(false);
+    expect(isCommandEnabled("edit.undo", { state: empty, canUndo: true })).toBe(true);
+    expect(isCommandEnabled("edit.redo", { state: empty, canRedo: true })).toBe(true);
+    expect(isCommandEnabled("run.solve", { state: empty, supportsSolve: false })).toBe(false);
+    expect(isCommandEnabled("run.solve", { state: empty, supportsSolve: true })).toBe(true);
+  });
+
+  it("executes clearDesk through a transaction that preserves canonical objects", async () => {
+    const withDefinition = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const canonicalId = withDefinition.cards[0]?.modelObjectId ?? "";
+    const withReference = createAtlasWorkspaceReference(withDefinition, canonicalId);
+    const result = await executeCommand("file.clearDesk", { state: withReference });
+
+    expect(result.transaction).toBeTruthy();
+    const cleared = result.transaction?.apply();
+    expect(getCanonicalModelObjects(cleared!)).toHaveLength(1);
+    expect(getWorkspaceCards(cleared!)).toHaveLength(0);
+  });
+
+  it("executes newModel through a transaction that clears all model state", async () => {
+    const withDefinition = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const result = await executeCommand("file.newModel", { state: withDefinition });
+    const cleared = result.transaction?.apply();
+
+    expect(cleared?.cards).toEqual([]);
+    expect(cleared?.connections).toEqual([]);
+  });
+
+  it("supports undo and redo for define, place reference, connect, and delete reference transactions", () => {
+    let store = createUndoRedoStore(emptyAtlasState());
+    store = commitTransaction(store, createActionTransaction("Define variable", store.present, {
+      type: "modelObject.define",
+      objectKind: "variable",
+      name: "x"
+    }));
+    const modelObjectId = store.present.cards[0]?.modelObjectId ?? "";
+    store = commitTransaction(store, createActionTransaction("Place reference", store.present, {
+      type: "workspaceReference.create",
+      modelObjectId
+    }));
+    const referenceId = getWorkspaceCards(store.present)[0]?.id ?? "";
+    store = commitTransaction(store, createActionTransaction("Connect ports", store.present, {
+      type: "connection.create",
+      source: { nodeId: referenceId, port: "expression" },
+      target: { nodeId: referenceId, slot: "input" }
+    }));
+    store = commitTransaction(store, createActionTransaction("Delete reference", store.present, {
+      type: "card.delete",
+      cardId: referenceId
+    }));
+
+    expect(getWorkspaceCards(store.present)).toHaveLength(0);
+    store = undo(store);
+    expect(getWorkspaceCards(store.present)).toHaveLength(1);
+    store = undo(store);
+    expect(store.present.connections).toHaveLength(0);
+    store = redo(store);
+    expect(store.present.connections).toHaveLength(1);
+  });
+
+  it("records command execution in the event log", async () => {
+    atlasEventLog.clear();
+    await executeCommand("model.defineVariable", { state: emptyAtlasState() }, { name: "z" });
+
+    expect(atlasEventLog.entries.some((entry) => entry.commandId === "model.defineVariable")).toBe(true);
+    expect(atlasEventLog.entries.some((entry) => entry.type === "transaction")).toBe(true);
+  });
+});
+
+describe("Atlas IR migrations", () => {
+  it("reports current schema version and migrates 0.2 IR to current", () => {
+    const oldIr = exportAtlasIR(emptyAtlasState());
+    const migrated = migrateIr({
+      ...oldIr,
+      schemaVersion: "0.2-cvxpy",
+      metadata: { ...oldIr.metadata, schemaVersion: "0.2-cvxpy" }
+    });
+
+    expect(getCurrentSchemaVersion()).toBe("0.3.0");
+    expect((migrated.ir as { schemaVersion?: string }).schemaVersion).toBe("0.3.0");
+    expect(migrated.diagnostics.some((diagnostic) => diagnostic.includes("Migrated"))).toBe(true);
+  });
+});
+
+function collectFiles(root: string): string[] {
+  return readdirSync(root).flatMap((entry) => {
+    const path = join(root, entry);
+    return statSync(path).isDirectory() ? collectFiles(path) : [path];
+  });
+}
 
 describe("Atlas workbench interactions", () => {
   it("converts pointer drag deltas through the active zoom scale", () => {
@@ -463,6 +927,76 @@ describe("Atlas multi-view workbench", () => {
     expect(html).toContain("Current value: missing");
     expect(html).toContain("DCP error");
   });
+
+  it("validates the Least Squares showcase across Object, IR, Code, Solution, and Diagnostics views", () => {
+    const state = loadAtlasBuiltinExample("least-squares");
+    const ir = exportAtlasIR(state);
+    const codeHtml = renderToString(
+      <AtlasCodeView
+        codeState={{
+          status: "success",
+          stale: false,
+          code: "import cvxpy as cp\nimport numpy as np\nx = cp.Variable((2,), name=\"x\")\nA = np.array([[1, 0], [1, 1], [1, 2]])\nobjective = cp.Minimize(cp.sum_squares(A @ x - b))\nproblem = cp.Problem(objective, constraints)\nproblem.solve()"
+        }}
+        solution={{ status: "empty" }}
+        backendStatus="connected"
+        onGenerateCode={() => undefined}
+      />
+    );
+    const solutionHtml = renderToString(
+      <AtlasSolutionView
+        solution={{
+          status: "success",
+          stale: false,
+          result: {
+            status: "optimal",
+            objectiveValue: 0.1667,
+            variableValues: { "var-x": [1.1667, 0.5] },
+            constraints: {},
+            diagnostics: [],
+            code: "problem.solve()"
+          }
+        }}
+        onSolve={() => undefined}
+        onSelectVariable={() => undefined}
+        onSelectConstraint={() => undefined}
+      />
+    );
+    const diagnosticsHtml = renderToString(
+      <AtlasDiagnosticsView
+        diagnostics={[
+          { id: "metadata-var-x", level: "info", message: "shape [2], curvature AFFINE, DCP true", sourceId: "var-x" },
+          { id: "metadata-loss", level: "info", message: "sum_squares is convex and DCP", sourceId: "atom-loss" }
+        ]}
+        stale={false}
+        onValidate={() => undefined}
+        onSelectSource={() => undefined}
+      />
+    );
+
+    expect(state.cards.map((card) => card.title)).toEqual(
+      expect.arrayContaining(["x", "A", "b", "A @ x", "A @ x - b", "sum_squares"])
+    );
+    expect(ir.modelObjects.variables.find((variable) => variable.id === "var-x")?.shape).toEqual([2]);
+    expect(ir.modelObjects.constants.find((constant) => constant.id === "const-A")?.value).toEqual([
+      [1, 0],
+      [1, 1],
+      [1, 2]
+    ]);
+    expect(ir.modelObjects.atoms.map((atom) => atom.importPath)).toEqual(
+      expect.arrayContaining(["atlas.expression.matmul", "atlas.expression.subtract", "cvxpy.sum_squares"])
+    );
+    expect(ir.workspaceNodes.length).toBeGreaterThan(0);
+    expect(ir.connections.length).toBeGreaterThan(0);
+    expect(renderToString(<AtlasIRView ir={ir} onExport={() => undefined} onImport={() => undefined} />)).toContain("&quot;modelObjects&quot;");
+    expect(codeHtml).toContain("cp.Variable");
+    expect(codeHtml).toContain("np.array");
+    expect(codeHtml).toContain("problem.solve()");
+    expect(solutionHtml).toContain("optimal");
+    expect(solutionHtml).toContain("[1.167, 0.5]");
+    expect(diagnosticsHtml).toContain("DCP true");
+    expect(diagnosticsHtml).toContain("curvature AFFINE");
+  });
 });
 
 describe("Atlas tutorial framework", () => {
@@ -520,9 +1054,33 @@ describe("Atlas tutorial framework", () => {
           [1, 2]
         ]);
       }
-      expect(steps[0]?.actions[0]).toMatchObject({ type: "loadExample", exampleId: example.id });
+      expect(steps[0]?.actions).toEqual(
+        expect.arrayContaining([expect.objectContaining({ type: "loadExample", exampleId: example.id })])
+      );
+      expect(steps.some((step) => step.actions.some((action) => action.type === "generateCode"))).toBe(true);
       expect(steps.at(-1)?.actions.some((action) => action.type === "solve")).toBe(true);
     }
+  });
+
+  it("Tiny LP tutorial switches views and reaches generate-code and solve steps", () => {
+    const steps = tutorialStepsForExample("tiny-lp");
+
+    expect(steps.map((step) => step.id)).toEqual([
+      "tiny-lp-load",
+      "tiny-lp-construct",
+      "tiny-lp-validate",
+      "tiny-lp-code",
+      "tiny-lp-solve"
+    ]);
+    expect(steps[2]?.actions).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: "switchView", view: "diagnostics" })])
+    );
+    expect(steps[3]?.actions).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: "switchView", view: "code" })])
+    );
+    expect(steps[4]?.actions).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: "switchView", view: "solution" })])
+    );
   });
 
   it("executes serializable tutorial actions through normal reducer actions", () => {
@@ -571,6 +1129,50 @@ describe("Atlas tutorial framework", () => {
     expect(state.connections).toHaveLength(1);
   });
 
+  it("executes explicit scripted actions for clear, define, place, connect, and switch tab", () => {
+    let state = defineAtlasModelObject(emptyAtlasState(), "variable", "existing", "scalar");
+    const clear = executeTutorialAction(state, { type: "clearWorkspace" });
+    if (!clear.dispatch) throw new Error("Expected clear dispatch.");
+    state = atlasReducer(state, clear.dispatch);
+    expect(state.cards).toHaveLength(0);
+
+    const define = executeTutorialAction(state, {
+      type: "defineModelObject",
+      action: {
+        type: "modelObject.define",
+        objectKind: "variable",
+        name: "x",
+        shape: "scalar",
+        position: { x: 120, y: 140 }
+      }
+    });
+    if (!define.dispatch) throw new Error("Expected define dispatch.");
+    state = atlasReducer(state, define.dispatch);
+    const modelObjectId = state.cards[0]?.modelObjectId;
+    if (!modelObjectId) throw new Error("Expected model object id.");
+
+    const place = executeTutorialAction(state, {
+      type: "placeWorkspaceReference",
+      modelObjectId,
+      position: { x: 420, y: 140 }
+    });
+    if (!place.dispatch) throw new Error("Expected place dispatch.");
+    state = atlasReducer(state, place.dispatch);
+
+    const connect = executeTutorialAction(state, {
+      type: "connectObjects",
+      source: { nodeId: state.cards[0]?.id, objectId: modelObjectId, port: "expression" },
+      target: { nodeId: state.cards[1]?.id, objectId: modelObjectId, slot: "arg0" }
+    });
+    if (!connect.dispatch) throw new Error("Expected connect dispatch.");
+    state = atlasReducer(state, connect.dispatch);
+
+    const switchView = executeTutorialAction(state, { type: "switchView", view: "code" });
+    expect(state.cards).toHaveLength(2);
+    expect(state.connections).toHaveLength(1);
+    expect(switchView.view).toBe("code");
+  });
+
   it("reports scripted action failures without mutating state", () => {
     const state = emptyAtlasState();
     const result = executeTutorialAction(state, {
@@ -597,9 +1199,204 @@ describe("Atlas built-in examples UI", () => {
 
     expect(html).toContain("Built-in CVXPY examples");
     expect(html).toContain("Tiny linear program");
-    expect(html).toContain("Least squares");
+    expect(html).toContain("Showcase: Least Squares");
     expect(html).toContain("Ridge regression");
     expect(html.match(/Guided tutorial/g)?.length).toBe(3);
+  });
+});
+
+describe("Atlas compact side tools", () => {
+  it("renders right-side collapsible tool sections", () => {
+    const html = renderToString(<AtlasApp />);
+
+    expect(html).toContain("Query Builder");
+    expect(html).toContain("Properties");
+    expect(html).toContain("Metadata / Evaluate");
+    expect(html).toContain("CVXPY Code");
+    expect(html).toContain("Diagnostics / Solution");
+    expect(html).toContain("References");
+  });
+
+  it("renders Inspector empty state compactly", () => {
+    const html = renderToString(<AtlasInspector {...inspectorProps(null, [])} />);
+
+    expect(html).toContain("No selection");
+    expect(html).toContain("Select a card");
+  });
+
+  it("renders selected variable summary and collapsible technical sections", () => {
+    const state = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const card = state.cards[0] ?? null;
+    const html = renderToString(
+      <AtlasInspector
+        {...inspectorProps(card, state.cards)}
+        cvxpyMetadata={{ shape: [], sign: "UNKNOWN", curvature: "AFFINE", is_dcp: true }}
+      />
+    );
+
+    expect(html).toContain("Kind");
+    expect(html).toContain("Canonical object");
+    expect(html).toContain("Reference node");
+    expect(html).toContain("Shape");
+    expect(html).toContain("DCP");
+    expect(html).toContain("CVXPY Code");
+    expect(html).toContain("Metadata");
+    expect(html).toContain("Diagnostics");
+    expect(html).toContain("References / Usages");
+    expect(html).toContain("Raw IR");
+    expect(html).toContain("Properties");
+    expect(html).toContain("Advanced / Debug");
+  });
+
+  it("renders selected object code, references, and diagnostics in Inspector sections", () => {
+    const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const modelObjectId = withVariable.cards[0]?.modelObjectId ?? "";
+    const withReference = createAtlasWorkspaceReference(withVariable, modelObjectId);
+    const card = withReference.cards[0] ?? null;
+    const html = renderToString(
+      <AtlasInspector
+        {...inspectorProps(card, withReference.cards)}
+        generatedCode={'import cvxpy as cp\nx = cp.Variable(name="x")\nproblem.solve()'}
+        selectedRuntimeDiagnostic={{
+          cardId: card?.id ?? "",
+          diagnosticId: "solve:x",
+          label: "solution",
+          value: "2",
+          status: "ok",
+          source: "solve"
+        }}
+      />
+    );
+
+    expect(html).toContain('x = cp.Variable(name=&quot;x&quot;)');
+    expect(html).toContain("Workspace references");
+    expect(html).toContain("2");
+    expect(html).toContain("solution");
+  });
+});
+
+function inspectorProps(card: AtlasWorkbenchState["cards"][number] | null, cards: AtlasWorkbenchState["cards"]) {
+  return {
+    card,
+    group: null,
+    cards,
+    queries: [],
+    evaluationEntry: null,
+    evaluationMode: "current" as const,
+    selectedRuntimeDiagnostic: null,
+    symbolicPreview: null,
+    cvxpyMetadata: null,
+    generatedCode: null,
+    dependencyHighlightEnabled: true,
+    onValidate: () => undefined,
+    onEvaluate: () => undefined,
+    onGenerateCode: () => undefined,
+    onAddTag: () => undefined,
+    onUpdateTag: () => undefined,
+    onDeleteTag: () => undefined,
+    onUpdateCardDetails: () => undefined,
+    onAddProperty: () => undefined,
+    onUpdateProperty: () => undefined,
+    onDeleteProperty: () => undefined,
+    onUpdateModule: () => undefined,
+    onDeleteModule: () => undefined,
+    onUpdateTaggedSum: () => undefined,
+    onUpdateAtomInput: () => undefined,
+    onUpdateObjective: () => undefined,
+    onAddObjectiveTerm: () => undefined,
+    onUpdateObjectiveTerm: () => undefined,
+    onRemoveObjectiveTerm: () => undefined,
+    onMoveObjectiveTerm: () => undefined,
+    onFocusObjectiveTerm: () => undefined,
+    onUpdateConstraint: () => undefined,
+    onToggleDependencyHighlight: () => undefined,
+    onUpdateGroup: () => undefined,
+    onDeleteGroup: () => undefined,
+    onDeleteCard: () => undefined,
+    onClear: () => undefined
+  };
+}
+
+describe("Atlas GUI architecture registries", () => {
+  it("registers commands with enabled predicates and delegates execution", () => {
+    const calls: string[] = [];
+    const registry = createAtlasCommandRegistry((commandId) => calls.push(commandId));
+    const undo = registry.get("undo");
+    const solve = registry.get("solve");
+
+    expect(ATLAS_COMMANDS.some((command) => command.id === "solve")).toBe(true);
+    expect(solve?.label).toBe("Solve");
+    expect(undo && isAtlasCommandEnabled(undo, { canUndo: false, canRedo: false, hasSelection: false })).toBe(false);
+    expect(registry.enabled("undo", { canUndo: true, canRedo: false, hasSelection: false })).toBe(true);
+
+    registry.execute("solve");
+    expect(calls).toEqual(["solve"]);
+  });
+
+  it("builds professional menus from command descriptors", () => {
+    const menus = buildAtlasMenus();
+
+    expect(menus.map((menu) => menu.label)).toEqual(["File", "Edit", "View", "Run", "Examples", "Tools", "Help"]);
+    expect(menus.find((menu) => menu.label === "Run")?.commands.map((command) => command.id)).toContain("solve");
+    expect(menus.find((menu) => menu.label === "View")?.commands.map((command) => command.id)).toContain("view:diagnostics");
+  });
+
+  it("registers synchronized views and switches through the registry helper", () => {
+    expect(ATLAS_VIEW_REGISTRY.map((view) => view.id)).toEqual([
+      "object",
+      "ir",
+      "code",
+      "solution",
+      "diagnostics"
+    ]);
+    expect(nextAtlasView("object")).toBe("ir");
+  });
+
+  it("registers panels and toggles panel state", () => {
+    const defaults = defaultAtlasPanelState();
+    const toggled = toggleAtlasPanel(defaults, "inspector");
+
+    expect(ATLAS_PANEL_REGISTRY.map((panel) => panel.id)).toEqual(
+      expect.arrayContaining(["constructor", "explorer", "inspector", "solution"])
+    );
+    expect(panelsForRegion("left").map((panel) => panel.id)).toEqual(["constructor", "explorer"]);
+    expect(toggled.inspector).toBe(!defaults.inspector);
+  });
+
+  it("registers context menu items by target type", () => {
+    expect(contextMenuItemsForTarget("node").map((item) => item.id)).toEqual(
+      expect.arrayContaining(["delete-reference", "rename", "open-inspector"])
+    );
+    expect(contextMenuItemsForTarget("canvas").map((item) => item.id)).toEqual(
+      expect.arrayContaining(["create-variable", "create-atom"])
+    );
+  });
+
+  it("opens and closes dialog state and renders confirm dialog callbacks", () => {
+    let confirmed = false;
+    const dialog = openAtlasDialog({
+      type: "confirm",
+      title: "Confirm",
+      message: "Proceed?",
+      onConfirm: () => {
+        confirmed = true;
+      }
+    });
+    const html = renderToString(<DialogHost dialog={dialog} onClose={() => undefined} />);
+
+    if (dialog.type === "confirm") dialog.onConfirm();
+    expect(confirmed).toBe(true);
+    expect(html).toContain("Proceed?");
+    expect(closeAtlasDialog()).toEqual({ type: "none" });
+  });
+
+  it("centralizes drag payload parsing and coordinate transforms", () => {
+    expect(canvasPointFromClient({ x: 30, y: 50 }, { x: 10, y: 20 }, 2)).toEqual({ x: 10, y: 15 });
+    expect(
+      parseAtlasDragPayload({
+        getData: (type: string) => type === "application/x-atlas-model-object" ? "var-x" : ""
+      })
+    ).toEqual({ kind: "modelObject", modelObjectId: "var-x" });
   });
 });
 
@@ -612,6 +1409,16 @@ describe("Atlas canonical model definitions", () => {
     expect(canonical[0]?.title).toBe("x");
     expect(canonical[0]?.modelObjectKind).toBe("variable");
     expect(canonical[0]?.workspaceRole).toBe("definition");
+  });
+
+  it("defining a variable does not create a workspace node", () => {
+    const state = defineAtlasModelObject(emptyAtlasState(), "variable", "y", 20);
+    const ir = exportAtlasIR(state);
+
+    expect(getCanonicalModelObjects(state)).toHaveLength(1);
+    expect(getWorkspaceCards(state)).toHaveLength(0);
+    expect(ir.modelObjects.variables[0]?.name).toBe("y");
+    expect(ir.workspaceNodes).toEqual([]);
   });
 
   it("creates multiple workspace references that share one model object id", () => {
@@ -658,14 +1465,148 @@ describe("Atlas canonical model definitions", () => {
     expect(deleted.connections).toHaveLength(0);
   });
 
+  it("selecting and deleting a connection clears only that connection", () => {
+    const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
+    const modelObjectId = getCanonicalModelObjects(withVariable)[0]?.modelObjectId;
+    if (!modelObjectId) throw new Error("Expected canonical variable id.");
+    const withReference = createAtlasWorkspaceReference(withVariable, modelObjectId);
+    const reference = getWorkspaceCards(withReference)[0];
+    if (!reference) throw new Error("Expected workspace reference.");
+    const connected = addAtlasConnection(
+      withReference,
+      { nodeId: reference.id, objectId: modelObjectId, port: "expression" },
+      { nodeId: reference.id, objectId: modelObjectId, slot: "arg0" }
+    );
+    const connectionId = connected.connections[0]?.id;
+    if (!connectionId) throw new Error("Expected connection id.");
+    const selected = atlasReducer(connected, { type: "connection.select", connectionId });
+    const deleted = atlasReducer(selected, { type: "connection.delete", connectionId });
+
+    expect(selected.selectedConnectionId).toBe(connectionId);
+    expect(deleted.connections).toEqual([]);
+    expect(deleted.cards).toHaveLength(2);
+    expect(deleted.selectedConnectionId).toBeNull();
+  });
+
+  it("connecting a variable output to norm input updates atom preview", () => {
+    const normSpec = FALLBACK_ATOM_SPECS.find((spec) => spec.name === "norm");
+    if (!normSpec) throw new Error("Expected norm atom spec.");
+    const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "y", 3);
+    const variableObjectId = getCanonicalModelObjects(withVariable)[0]?.modelObjectId;
+    if (!variableObjectId) throw new Error("Expected variable object id.");
+    const withAtom = defineAtlasModelObject(withVariable, "atom", "norm", "scalar", normSpec);
+    const atomObjectId = getCanonicalModelObjects(withAtom).find((card) => card.modelObjectKind === "atom")?.modelObjectId;
+    if (!atomObjectId) throw new Error("Expected atom object id.");
+    const withVariableReference = createAtlasWorkspaceReference(withAtom, variableObjectId);
+    const withAtomReference = createAtlasWorkspaceReference(withVariableReference, atomObjectId);
+    const variableNode = getWorkspaceCards(withAtomReference).find((card) => card.modelObjectKind === "variable");
+    const atomNode = getWorkspaceCards(withAtomReference).find((card) => card.modelObjectKind === "atom");
+    if (!variableNode || !atomNode) throw new Error("Expected workspace references.");
+    const connected = addAtlasConnection(
+      withAtomReference,
+      { nodeId: variableNode.id, objectId: variableObjectId, port: "expression" },
+      { nodeId: atomNode.id, objectId: atomObjectId, slot: "arg0" }
+    );
+    const updatedAtom = getWorkspaceCards(connected).find((card) => card.id === atomNode.id);
+    if (!updatedAtom) throw new Error("Expected updated atom reference.");
+    const html = renderToString(
+      <AtlasCardView
+        card={updatedAtom}
+        allCards={connected.cards}
+        queries={[]}
+        dependencyPropertyNames={new Set()}
+        diagnostics={[]}
+        selected={false}
+        highlighted={false}
+        onPointerDown={() => undefined}
+        onPointerMove={() => undefined}
+        onPointerUp={() => undefined}
+        onPointerCancel={() => undefined}
+      />
+    );
+
+    expect(updatedAtom.atomConfig?.positionalInputs[0]?.objectId).toBe(variableObjectId);
+    expect(html).toContain("norm(y");
+    expect(html).toContain("y");
+  });
+
+  it("can plug an atom output into an objective and persist the connection", () => {
+    const normSpec = FALLBACK_ATOM_SPECS.find((spec) => spec.name === "norm");
+    if (!normSpec) throw new Error("Expected norm atom spec.");
+    let state = defineAtlasModelObject(emptyAtlasState(), "variable", "y", 3);
+    state = defineAtlasModelObject(state, "atom", "norm", "scalar", normSpec);
+    state = defineAtlasModelObject(state, "objective", "minimize norm");
+    const variableObjectId = getCanonicalModelObjects(state).find((card) => card.modelObjectKind === "variable")?.modelObjectId;
+    const atomObjectId = getCanonicalModelObjects(state).find((card) => card.modelObjectKind === "atom")?.modelObjectId;
+    const objectiveObjectId = getCanonicalModelObjects(state).find((card) => card.modelObjectKind === "objective")?.modelObjectId;
+    if (!variableObjectId || !atomObjectId || !objectiveObjectId) throw new Error("Expected model object ids.");
+    state = createAtlasWorkspaceReference(state, variableObjectId);
+    state = createAtlasWorkspaceReference(state, atomObjectId);
+    state = createAtlasWorkspaceReference(state, objectiveObjectId);
+    const variableNode = getWorkspaceCards(state).find((card) => card.modelObjectKind === "variable");
+    const atomNode = getWorkspaceCards(state).find((card) => card.modelObjectKind === "atom");
+    const objectiveNode = getWorkspaceCards(state).find((card) => card.modelObjectKind === "objective");
+    if (!variableNode || !atomNode || !objectiveNode) throw new Error("Expected workspace references.");
+    state = addAtlasConnection(
+      state,
+      { nodeId: variableNode.id, objectId: variableObjectId, port: "expression" },
+      { nodeId: atomNode.id, objectId: atomObjectId, slot: "arg0" }
+    );
+    state = addAtlasConnection(
+      state,
+      { nodeId: atomNode.id, objectId: atomObjectId, port: "expression" },
+      { nodeId: objectiveNode.id, objectId: objectiveObjectId, slot: "term0" }
+    );
+    const objective = getWorkspaceCards(state).find((card) => card.id === objectiveNode.id);
+    const imported = importAtlasIR(JSON.parse(serializeAtlasIR(exportAtlasIR(state))));
+
+    expect(objective?.objective?.terms[0]?.functionCardId).toBe(atomObjectId);
+    expect(exportAtlasIR(state).connections).toEqual(
+      expect.arrayContaining([expect.objectContaining({ target: expect.objectContaining({ slot: "term0" }) })])
+    );
+    expect(imported.diagnostics).toEqual([]);
+    expect(imported.state.connections.some((connection) => connection.target.slot === "term0")).toBe(true);
+  });
+
+  it("stores CVXPY variable shape and attributes on canonical definitions", () => {
+    const state = defineAtlasModelObject(
+      emptyAtlasState(),
+      "variable",
+      "z",
+      10,
+      undefined,
+      undefined,
+      { boolean: true, nonneg: true }
+    );
+    const variable = exportAtlasIR(state).modelObjects.variables[0];
+
+    expect(variable?.shape).toBe(10);
+    expect(variable?.decision?.shape).toBe("vector");
+    expect(variable?.decision?.variableType).toBe("binary");
+    expect(variable?.decision?.attributes).toMatchObject({ boolean: true, nonneg: true });
+  });
+
+  it("parses scalar, vector, matrix, and custom CVXPY shapes", () => {
+    expect(parseAtlasShapeDraft({ mode: "scalar" })).toMatchObject({ ok: true, shape: "scalar" });
+    expect(parseAtlasShapeDraft({ mode: "vector", vectorLength: "20" })).toMatchObject({ ok: true, shape: 20 });
+    expect(parseAtlasShapeDraft({ mode: "matrix", matrixRows: "3", matrixCols: "2" })).toMatchObject({ ok: true, shape: [3, 2] });
+    expect(parseAtlasShapeDraft({ mode: "custom", customShape: "(4, 5)" })).toMatchObject({ ok: true, shape: [4, 5] });
+    expect(parseAtlasShapeDraft({ mode: "custom", customShape: "(0, 5)" })).toMatchObject({ ok: false });
+  });
+
   it("serializes semantic connections between workspace ports and slots", () => {
     const withVariable = defineAtlasModelObject(emptyAtlasState(), "variable", "x", "scalar");
     const withAtom = defineAtlasModelObject(withVariable, "atom", "sum", "scalar");
-    const variableNode = withAtom.cards.find((card) => card.modelObjectKind === "variable");
-    const atomNode = withAtom.cards.find((card) => card.modelObjectKind === "atom");
+    const variableObjectId = withAtom.cards.find((card) => card.modelObjectKind === "variable")?.modelObjectId;
+    const atomObjectId = withAtom.cards.find((card) => card.modelObjectKind === "atom")?.modelObjectId;
+    if (!variableObjectId || !atomObjectId) throw new Error("Expected variable and atom objects.");
+    const withVariableReference = createAtlasWorkspaceReference(withAtom, variableObjectId);
+    const withAtomReference = createAtlasWorkspaceReference(withVariableReference, atomObjectId);
+    const variableNode = withAtomReference.cards.find((card) => card.workspaceRole === "reference" && card.modelObjectKind === "variable");
+    const atomNode = withAtomReference.cards.find((card) => card.workspaceRole === "reference" && card.modelObjectKind === "atom");
     if (!variableNode || !atomNode) throw new Error("Expected variable and atom nodes.");
     const connected = addAtlasConnection(
-      withAtom,
+      withAtomReference,
       { nodeId: variableNode.id, objectId: variableNode.modelObjectId, port: "expression" },
       { nodeId: atomNode.id, objectId: atomNode.modelObjectId, slot: "arg0" }
     );
@@ -735,7 +1676,8 @@ describe("Atlas canonical model definitions", () => {
       </>
     );
 
-    expect(html).toContain("expr out");
+    expect(html).toContain("x");
+    expect(html).toContain("sum");
     expect(html).toContain("arg 1");
     expect(html).toContain("arg 2");
   });
@@ -753,6 +1695,20 @@ describe("Atlas canonical model definitions", () => {
     expect(atomCard?.atomConfig?.positionalInputs[0]?.name).toBe("x");
     expect(atomCard?.atomConfig?.keywordInputs.p?.value).toBe(2);
     expect(exportAtlasIR(state).modelObjects.atoms[0]?.atomSpec?.name).toBe("norm");
+  });
+
+  it("creates a generic AtomObject from a generated symbol id", () => {
+    const atomSpec = atomSpecFromSymbolId("cvxpy.atoms.norm.norm");
+    if (!atomSpec) throw new Error("Expected generated norm symbol.");
+    const state = defineAtlasModelObject(emptyAtlasState(), "atom", atomSpec.name, "scalar", atomSpec);
+    const atomCard = state.cards[0];
+    const atomObject = exportAtlasIR(state).modelObjects.atoms[0];
+
+    expect(atomCard?.atomSpec?.symbolId).toBe("cvxpy.atoms.norm.norm");
+    expect(atomCard?.atomConfig?.symbolId).toBe("cvxpy.atoms.norm.norm");
+    expect(atomObject?.symbolId).toBe("cvxpy.atoms.norm.norm");
+    expect(atomObject?.atomName).toBe("norm");
+    expect(atomObject?.positionalInputs[0]?.name).toBe("x");
   });
 
   it("serializes generic AtomObject inputs through Atlas IR", () => {
@@ -844,6 +1800,18 @@ describe("Atlas canonical model definitions", () => {
     const html = renderToString(<AtlasAtomNode atomConfig={atomConfig} />);
 
     expect(html).toContain("Use p dropdown values");
+  });
+
+  it("renders variadic catalog hints as add-input affordances", () => {
+    const atomSpec = atomSpecFromSymbolId("cvxpy.atoms.affine.hstack.hstack");
+    if (!atomSpec) throw new Error("Expected generated hstack symbol.");
+    const state = defineAtlasModelObject(emptyAtlasState(), "atom", atomSpec.name, "scalar", atomSpec);
+    const atomConfig = state.cards[0]?.atomConfig;
+    if (!atomConfig) throw new Error("Expected atom config.");
+    const html = renderToString(<AtlasAtomNode atomConfig={atomConfig} />);
+
+    expect(html).toContain("hstack");
+    expect(html).toContain("+ add");
   });
 });
 
@@ -2130,11 +3098,12 @@ describe("Atlas card model", () => {
     const state = addAtlasCard(emptyAtlasState(), "object", "product-card");
     const ir = exportAtlasIR(state, { exportedAt: "2026-01-01T00:00:00.000Z" });
 
-    expect(ir.schemaVersion).toBe("0.2-cvxpy");
-    expect(ir.metadata.schemaVersion).toBe("0.2-cvxpy");
+    expect(ir.schemaVersion).toBe("0.3.0");
+    expect(ir.metadata.schemaVersion).toBe("0.3.0");
     expect(ir.metadata.source).toBe("atlas-gui");
     expect(ir.modelObjects.constants[0]?.id).toBe("product-card");
     expect(ir.workspaceNodes[0]?.modelObjectId).toBe("product-card");
+    expect(ir.workspace?.nodes[0]?.modelObjectId).toBe("product-card");
     expect(serializeAtlasIR(ir)).toContain('"modelObjects"');
   });
 
@@ -2233,9 +3202,10 @@ describe("Atlas card model", () => {
     });
 
     expect(imported.diagnostics).toEqual([]);
-    expect(imported.state.cards).toHaveLength(2);
+    expect(imported.state.cards).toHaveLength(3);
     expect(getCanonicalModelObjects(imported.state)).toHaveLength(1);
-    expect(imported.state.cards.map((card) => card.modelObjectId)).toEqual(["var-x", "var-x"]);
+    expect(getWorkspaceCards(imported.state)).toHaveLength(2);
+    expect(imported.state.cards.map((card) => card.modelObjectId)).toEqual(["var-x", "var-x", "var-x"]);
   });
 
   it("roundtrips Atlas IR cards, queries, groups, objectives, constraints, and layout", () => {

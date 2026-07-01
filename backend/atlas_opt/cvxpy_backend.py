@@ -76,7 +76,7 @@ def generate_cvxpy_first_code(ir) -> str:
         lines.append("import numpy as np")
     lines.append("")
     for variable in ir.modelObjects.variables:
-        lines.append(f'{names[variable.id]} = cp.Variable({shape_argument(getattr(variable, "shape", None))}name="{variable.name}")')
+        lines.append(f"{names[variable.id]} = {cvxpy_variable_code(variable)}")
     if ir.modelObjects.variables:
         lines.append("")
     for constant in ir.modelObjects.constants:
@@ -450,14 +450,16 @@ def connected_inputs(ir, target_object_id: str) -> list[tuple[str, str]]:
 def atom_call_code(import_path: str, arg_codes: list[str]) -> str:
     """Return Python code for a structural Atlas operator or CVXPY atom."""
 
-    if import_path == "atlas.expression.add":
+    if import_path in {"atlas.expression.add", "atlas.operator.add"}:
         return f"({' + '.join(arg_codes)})" if arg_codes else "0"
-    if import_path == "atlas.expression.subtract":
+    if import_path in {"atlas.expression.subtract", "atlas.operator.subtract"}:
         return f"({arg_codes[0]} - {arg_codes[1]})" if len(arg_codes) >= 2 else "# incomplete subtract"
-    if import_path == "atlas.expression.multiply":
+    if import_path in {"atlas.expression.multiply", "atlas.operator.multiply"}:
         return f"({arg_codes[0]} * {arg_codes[1]})" if len(arg_codes) >= 2 else "# incomplete multiply"
-    if import_path == "atlas.expression.matmul":
+    if import_path in {"atlas.expression.matmul", "atlas.operator.matmul"}:
         return f"({arg_codes[0]} @ {arg_codes[1]})" if len(arg_codes) >= 2 else "# incomplete matmul"
+    if import_path == "atlas.operator.negate":
+        return f"(-{arg_codes[0]})" if arg_codes else "# incomplete negate"
     atom_name = import_path.removeprefix("cvxpy.").split(".")[-1]
     return f"cp.{atom_name}({', '.join(arg_codes)})"
 
@@ -474,7 +476,40 @@ def shape_argument(shape: Any) -> str:
     """Return optional cp.Variable shape argument code."""
 
     normalized = cvxpy_shape_for_code(shape)
-    return f"{normalized!r}, " if normalized != () else ""
+    if normalized == ():
+        return ""
+    if len(normalized) == 1:
+        return f"{normalized[0]!r}, "
+    return f"{normalized!r}, "
+
+
+def cvxpy_variable_code(variable: Any) -> str:
+    """Return cp.Variable construction code for a CVXPY-first variable object."""
+
+    args: list[str] = []
+    shape_code = shape_argument(getattr(variable, "shape", None)).rstrip(", ")
+    if shape_code:
+        args.append(shape_code)
+    decision = getattr(variable, "decision", None)
+    attributes = getattr(decision, "attributes", {}) or {}
+    for key in [
+        "nonneg",
+        "nonpos",
+        "boolean",
+        "integer",
+        "symmetric",
+        "PSD",
+        "NSD",
+        "complex",
+        "imag",
+        "hermitian",
+        "pos",
+        "neg",
+    ]:
+        if attributes.get(key):
+            args.append(f"{key}=True")
+    args.append(f'name="{variable.name}"')
+    return f"cp.Variable({', '.join(args)})"
 
 
 def cvxpy_shape_for_code(value: Any) -> tuple[int, ...]:

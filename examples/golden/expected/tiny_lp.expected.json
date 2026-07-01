@@ -1,0 +1,13 @@
+{
+  "name": "tiny_lp",
+  "solveSupport": "supported",
+  "expectedDcpStatus": true,
+  "expectedGeneratedCodeFragments": ["import cvxpy as cp", "cp.Variable", "cp.Maximize", "cp.Problem"],
+  "expectedSolverStatus": ["optimal", "optimal_inaccurate"],
+  "expectedObjectiveValue": 10,
+  "expectedVariableValues": {
+    "var-x": { "value": 2, "tolerance": 0.0001 },
+    "var-y": { "value": 2, "tolerance": 0.0001 }
+  },
+  "expectedMaxDiagnosticSeverity": "info"
+}

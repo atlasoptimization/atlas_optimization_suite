@@ -9,10 +9,10 @@ from atlas_opt.schema import AtlasIR
 def test_minimal_valid_ir() -> None:
     ir = AtlasIR.model_validate({})
 
-    assert ir.schemaVersion == "0.2-cvxpy"
+    assert ir.schemaVersion == "0.3.0"
     assert ir.cards == []
     assert ir.modelObjects.variables == []
-    assert ir.model_dump()["schemaVersion"] == "0.2-cvxpy"
+    assert ir.model_dump()["schemaVersion"] == "0.3.0"
 
 
 def test_cvxpy_first_ir_allows_two_workspace_nodes_for_one_variable() -> None:

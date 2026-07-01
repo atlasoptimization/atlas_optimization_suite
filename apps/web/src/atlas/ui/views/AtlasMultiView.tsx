@@ -3,6 +3,7 @@ import type { AtlasIR } from "../../core/ir";
 import { serializeAtlasIR, validateAtlasIR } from "../../core/ir";
 import type { AtlasSolveResult, AtlasSolutionState } from "../../core/solution";
 import type { AtlasRuntimeDiagnostic } from "../../core/runtimeDiagnostics";
+import { ATLAS_VIEW_REGISTRY } from "./viewRegistry";
 
 export type AtlasWorkbenchView = "object" | "ir" | "code" | "solution" | "diagnostics";
 
@@ -19,14 +20,6 @@ export type AtlasViewDiagnostic = {
   sourceId?: string | null;
 };
 
-const VIEW_TABS: Array<{ id: AtlasWorkbenchView; label: string }> = [
-  { id: "object", label: "Object" },
-  { id: "ir", label: "IR" },
-  { id: "code", label: "CVXPY Code" },
-  { id: "solution", label: "Solution" },
-  { id: "diagnostics", label: "Diagnostics" }
-];
-
 export function AtlasViewTabs({
   activeView,
   onChange
@@ -36,7 +29,7 @@ export function AtlasViewTabs({
 }) {
   return (
     <nav className="atlas-view-tabs" aria-label="Atlas synchronized model views">
-      {VIEW_TABS.map((tab) => (
+      {ATLAS_VIEW_REGISTRY.map((tab) => (
         <button
           key={tab.id}
           type="button"
@@ -44,7 +37,7 @@ export function AtlasViewTabs({
           aria-pressed={activeView === tab.id}
           onClick={() => onChange(tab.id)}
         >
-          {tab.label}
+          {tab.title}
         </button>
       ))}
     </nav>
